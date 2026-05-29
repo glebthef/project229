@@ -1,28 +1,32 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
-export default function Header() {
+export default function Header({ isLight, onToggle }) {
   return (
-    <div>
-      <header className="header">
-        <div className="leftside">
-          <div className="logo">PrimeBet</div>
-          <button className="hbtn">Спорт</button>
-          <button className="hbtn">Киберспорт</button>
-          <button className="hbtn">Игры 24/7</button>
-        </div>
+    <header className="header">
+      <div className="leftside">
+        <Link to="/" className="logo">PrimeBet</Link>
+        <button className="hbtn">Спорт</button>
+        <button className="hbtn">Киберспорт</button>
 
-        <div className="rightside">
-          <input type="checkbox" id="theme-switch" className="checkbox" />
-          <label htmlFor="theme-switch" className="toggle-label">
-            <span className="icon moon">☾</span>
-            <span className="icon sun">☀</span>
-            <span className="circle"></span>
-          </label>
+      </div>
 
-          <button className="hbtn btn-sign">Войти</button>
-          <button className="hbtn btn-auth">Регистрация</button>
-        </div>
-      </header>
-    </div>
+      <div className="rightside">
+        <label className="toggle-label">
+          <input 
+            type="checkbox" 
+            className="checkbox" 
+            checked={isLight}
+            onChange={onToggle}  
+          />
+          <span className="icon moon">☾</span>
+          <span className="icon sun">☀</span>
+          <span className="circle"></span>
+        </label>
+
+        <button className="hbtn btn-sign">Войти</button>
+        <button className="hbtn btn-auth">Регистрация</button>
+      </div>
+    </header>
   )
 }
