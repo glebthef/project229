@@ -8,6 +8,7 @@ import AuthModal from './componens/AuthModal'
 import { AuthProvider } from './AuthContext'
 import './App.css'
 
+
 export default function App() {
   const [isLight, setIsLight] = useState(() => {
     return localStorage.getItem('theme') === 'light'
