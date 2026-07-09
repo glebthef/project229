@@ -6,9 +6,9 @@ const QUICK_AMOUNTS = [50, 100, 200, 500]
 
 export default function Coupon({ onAuthOpen }) {
   const { user, coupon, stake, setStake, removeFromCoupon, clearCoupon, betsHistory, setBetsHistory } = useAuth()
-  const [tab, setTab] = useState('coupon') // 'coupon' | 'history'
-  const [historyTab, setHistoryTab] = useState('pending') // 'pending' | 'settled'
-  const [betType, setBetType] = useState('express') // 'single' | 'express'
+  const [tab, setTab] = useState('coupon') 
+  const [historyTab, setHistoryTab] = useState('pending') 
+  const [betType, setBetType] = useState('express') 
 
   const items = Object.values(coupon)
   const totalOdd = items.reduce((acc, i) => acc * i.odd, 1)
@@ -43,7 +43,6 @@ export default function Coupon({ onAuthOpen }) {
     <div className="coupon-sidebar">
       <div className="coupon">
 
-        {/* Шапка — Купон / История */}
         <div className="coupon__header">
           <div className="coupon__header-tabs">
             <button
@@ -62,11 +61,8 @@ export default function Coupon({ onAuthOpen }) {
             </button>
           </div>
         </div>
-
-        {/* ===== ВКЛАДКА КУПОН ===== */}
         {tab === 'coupon' && (<>
 
-          {/* Ординар / Экспресс */}
           {items.length > 0 && (
             <div className="coupon__type-tabs">
               <button
@@ -80,7 +76,7 @@ export default function Coupon({ onAuthOpen }) {
             </div>
           )}
 
-          {/* Пустое состояние */}
+      
           {items.length === 0 && (
             <div className="coupon__empty">
               <div className="coupon__empty-icon">🎫</div>
@@ -98,7 +94,6 @@ export default function Coupon({ onAuthOpen }) {
             </div>
           )}
 
-          {/* Список событий */}
           {items.length > 0 && (
             <div className="coupon__items">
               {items.map(({ match, outcome, odd }) => (
@@ -120,7 +115,7 @@ export default function Coupon({ onAuthOpen }) {
                 </div>
               ))}
 
-              {/* Удалить все + общий коэф */}
+          
               <div className="coupon__bottom-row">
                 <button className="coupon__delete-all" onClick={clearCoupon}>
                   🗑 Удалить все...
@@ -132,19 +127,17 @@ export default function Coupon({ onAuthOpen }) {
             </div>
           )}
 
-          {/* Футер — ввод суммы и ставка */}
+
           {items.length > 0 && (
             <div className="coupon__footer">
 
-              {/* Выигрыш */}
+          
               {payout && (
                 <div className="coupon__payout">
                   <span>Выигрыш</span>
                   <span className="coupon__payout-value">{payout} ₽</span>
                 </div>
               )}
-
-              {/* Поле суммы на всю ширину */}
               <input
                 className="coupon__stake-input coupon__stake-input--full"
                 type="number"
@@ -154,7 +147,6 @@ export default function Coupon({ onAuthOpen }) {
                 min="0"
               />
 
-              {/* Кнопка заключить на всю ширину */}
               <button
                 className="coupon__bet-btn coupon__bet-btn--full"
                 onClick={handleBet}
@@ -163,7 +155,7 @@ export default function Coupon({ onAuthOpen }) {
                 Заключить
               </button>
 
-              {/* Быстрые суммы */}
+             
               <div className="coupon__quick-amounts">
                 {QUICK_AMOUNTS.map(a => (
                   <button
@@ -178,7 +170,6 @@ export default function Coupon({ onAuthOpen }) {
           )}
         </>)}
 
-        {/* ===== ВКЛАДКА ИСТОРИЯ ===== */}
         {tab === 'history' && (<>
           <div className="coupon__type-tabs">
             <button

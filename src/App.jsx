@@ -7,7 +7,10 @@ import MainLayout from './componens/MainLayout'
 import AuthModal from './componens/AuthModal'
 import { AuthProvider } from './AuthContext'
 import './App.css'
-
+import Rules from './componens/Rules'
+import Conf from './componens/Conf'
+import Contacts from './componens/Contacts'
+import { ChatProvider } from './ChatContext'
 
 export default function App() {
   const [isLight, setIsLight] = useState(() => {
@@ -27,20 +30,25 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Header
-          isLight={isLight}
-          onToggle={() => setIsLight(!isLight)}
-          onAuthOpen={() => setAuthOpen(true)}
-        />
-        <Routes>
-          <Route path="/" element={<Body onAuthOpen={() => setAuthOpen(true)} />} />
-          <Route path="/all-sports" element={<MainLayout onAuthOpen={() => setAuthOpen(true)} />} />
-          <Route path="/all-sports/cybersport" element={<MainLayout onAuthOpen={() => setAuthOpen(true)} initialSport="cybersport" />} />
-        </Routes>
-        <Footer />
-        {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
-      </BrowserRouter>
+      <ChatProvider>
+        <BrowserRouter>
+          <Header
+            isLight={isLight}
+            onToggle={() => setIsLight(!isLight)}
+            onAuthOpen={() => setAuthOpen(true)}
+          />
+          <Routes>
+            <Route path="/rules" element={<Rules />} />
+            <Route path="/confidentiality" element={<Conf />} />
+            <Route path="/contacts" element={<Contacts />} />
+            <Route path="/" element={<Body onAuthOpen={() => setAuthOpen(true)} />} />
+            <Route path="/all-sports" element={<MainLayout onAuthOpen={() => setAuthOpen(true)} />} />
+            <Route path="/all-sports/cybersport" element={<MainLayout onAuthOpen={() => setAuthOpen(true)} initialSport="cybersport" />} />
+          </Routes>
+          <Footer />
+          {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
+        </BrowserRouter>
+       </ChatProvider> 
     </AuthProvider>
   )
 }

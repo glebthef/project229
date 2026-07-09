@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import Coupon from './Coupon'
 import { sports, events } from '../data.js'
-
+import { useChat } from '../ChatContext.jsx'
 const OUTCOME_LABELS = { p1: 'П1', x: 'X', p2: 'П2' }
 const NAV_SPORTS = sports.slice(0, 7)
 
 export default function Body({ onAuthOpen }) {
   const { user, coupon, toggleOdd } = useAuth()
   const [activeSport, setActiveSport] = useState('football')
-  const [isChatOpen, setIsChatOpen] = useState(false)
+  const { toggleChat } = useChat()
 
   const currentEvents = events[activeSport] || []
 
@@ -96,25 +96,13 @@ export default function Body({ onAuthOpen }) {
         <div className="right-side">
           <Coupon onAuthOpen={onAuthOpen} />
           <a href="#" className="support-btn" aria-label="Поддержка"
-            onClick={e => { e.preventDefault(); setIsChatOpen(!isChatOpen) }}>
+            onClick={e => { e.preventDefault(); toggleChat() }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
           </a>
         </div>
 
-        {isChatOpen && (
-          <div className="chat-up">
-            <div className="chat-header">
-              <span>Написать в поддержку</span>
-              <button className="close-btn" onClick={() => setIsChatOpen(false)}>✕</button>
-            </div>
-            <div className="chat-body">
-              <textarea placeholder="Введите ваше сообщение..." rows="4"></textarea>
-              <button className="send-btn">Отправить</button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
