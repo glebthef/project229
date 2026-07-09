@@ -1,4 +1,17 @@
-export default function RightPanel({ title, data }) {
+import { useAuth } from '../AuthContext'
+
+const OUTCOME_LABELS = { p1: 'П1', x: 'X', p2: 'П2' }
+
+export default function RightPanel({ title, data, onAuthOpen }) {
+  const { user, coupon, toggleOdd } = useAuth()
+
+  const handleOddClick = (match, outcome) => {
+    if (!user) { onAuthOpen(); return }
+    toggleOdd(match, outcome)
+  }
+
+  const isActive = (matchId, outcome) => !!coupon[`${matchId}_${outcome}`]
+
   const grouped = data.reduce((acc, match) => {
     if (!acc[match.league]) acc[match.league] = []
     acc[match.league].push(match)
@@ -22,9 +35,15 @@ export default function RightPanel({ title, data }) {
                     <span className="time">{m.time}</span>
                   </div>
                   <div className="odds">
-                    <button className="odd">П1 {m.odds?.p1}</button>
-                    <button className="odd">X {m.odds?.x || '-'}</button>
-                    <button className="odd">П2 {m.odds?.p2}</button>
+                    {['p1', 'x', 'p2'].map(outcome => (
+                      <button
+                        key={outcome}
+                        className={`odd ${isActive(m.id, outcome) ? 'odd--active' : ''}`}
+                        onClick={() => handleOddClick(m, outcome)}
+                      >
+                        {OUTCOME_LABELS[outcome]} {m.odds?.[outcome] ?? '-'}
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -37,4 +56,3 @@ export default function RightPanel({ title, data }) {
     </main>
   )
 }
-//next ks   /      роут

@@ -1,0 +1,40 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+cd /Users/gleb_the_f/project229
+git init
+# Добавить все файлы (кроме тех, что в .gitignore)
+git add .
+
+# Сделать коммит
+git commit -m "Initial commit: FastAPI backend with PostgreSQL"
+git add .
+git commit -m "Initial commit: FastAPI backend with PostgreSQ^X
+^X
+
+git remote add origin https://github.com/glebthef/backend.git
+.git
+
+
