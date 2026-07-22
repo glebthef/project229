@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react'
+import { createSession, deleteSession, getUser, register as apiRegister } from './api'
 
 const AuthContext = createContext(null)
 
@@ -7,27 +8,54 @@ export function AuthProvider({ children }) {
     const saved = localStorage.getItem('user')
     return saved ? JSON.parse(saved) : null
   })
-
-  // Купон живёт здесь — общий для всех страниц
   const [coupon, setCoupon] = useState({})
   const [stake, setStake] = useState('')
-  const [betsHistory, setBetsHistory] = useState(() => {
+  const [betsHistory, setBetsHistoryState] = useState(() => {
     const saved = localStorage.getItem('betsHistory')
     return saved ? JSON.parse(saved) : []
   })
+  const [loading, setLoading] = useState(false)
 
-  const login = (userData) => {
+  const saveUser = (userData) => {
     localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
   }
 
-  const logout = () => {
+  const register = async (loginStr, password) => {
+    setLoading(true)
+    try {
+      await apiRegister(loginStr, password)
+      await login(loginStr, password)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const login = async (loginStr, password) => {
+    setLoading(true)
+    try {
+      const { user_id, secret } = await createSession(loginStr, password)
+      const userData = await getUser(user_id)
+      saveUser({ ...userData, secret })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const logout = async () => {
+    if (user?.secret) await deleteSession(user.secret).catch(() => {})
     localStorage.removeItem('user')
+    localStorage.removeItem('betsHistory')
     setUser(null)
     setCoupon({})
     setStake('')
-    setBetsHistory([])
-    localStorage.removeItem('betsHistory')
+    setBetsHistoryState([])
+  }
+
+  const refreshBalance = async () => {
+    if (!user) return
+    const fresh = await getUser(user.id)
+    saveUser({ ...user, balance: fresh.balance })
   }
 
   const updateBalance = (amount) => {
@@ -35,6 +63,14 @@ export function AuthProvider({ children }) {
       const updated = { ...prev, balance: (prev.balance || 0) + amount }
       localStorage.setItem('user', JSON.stringify(updated))
       return updated
+    })
+  }
+
+  const setBetsHistory = (updater) => {
+    setBetsHistoryState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      localStorage.setItem('betsHistory', JSON.stringify(next))
+      return next
     })
   }
 
@@ -54,24 +90,15 @@ export function AuthProvider({ children }) {
     })
   }
 
-  const removeFromCoupon = (key) => {
-    setCoupon(prev => { const n = { ...prev }; delete n[key]; return n })
-  }
-
+  const removeFromCoupon = (key) => setCoupon(prev => { const n = { ...prev }; delete n[key]; return n })
   const clearCoupon = () => setCoupon({})
 
   return (
     <AuthContext.Provider value={{
-      user, login, logout, updateBalance,
+      user, loading,
+      login, logout, register, updateBalance, refreshBalance,
       coupon, stake, setStake, toggleOdd, removeFromCoupon, clearCoupon,
-      betsHistory,
-      setBetsHistory: (updater) => {
-        setBetsHistory(prev => {
-          const next = typeof updater === 'function' ? updater(prev) : updater
-          localStorage.setItem('betsHistory', JSON.stringify(next))
-          return next
-        })
-      },
+      betsHistory, setBetsHistory,
     }}>
       {children}
     </AuthContext.Provider>
