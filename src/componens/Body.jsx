@@ -1,18 +1,49 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import Coupon from './Coupon'
-import { sports, events } from '../data.js'
+import { sports, events as localEvents } from '../data.js'
+import { getEvents } from '../api'
 import { useChat } from '../ChatContext.jsx'
+
 const OUTCOME_LABELS = { p1: 'П1', x: 'X', p2: 'П2' }
 const NAV_SPORTS = sports.slice(0, 7)
 
+function normalizeEvent(e) {
+  return {
+    id: e.id,
+    league: e.league,
+    home: e.home,
+    away: e.away,
+    sport_slug: e.sport_slug,
+    time: e.starts_at
+      ? new Date(e.starts_at).toLocaleString('ru-RU', {
+          day: '2-digit', month: '2-digit',
+          hour: '2-digit', minute: '2-digit',
+        })
+      : '',
+    odds: { p1: e.odd_p1 ?? null, x: e.odd_x ?? null, p2: e.odd_p2 ?? null },
+    status: e.status,
+    fromDB: true,
+  }
+}
+
 export default function Body({ onAuthOpen }) {
   const { user, coupon, toggleOdd } = useAuth()
-  const [activeSport, setActiveSport] = useState('football')
   const { toggleChat } = useChat()
+  const [activeSport, setActiveSport] = useState('football')
+  const [dbEvents, setDbEvents] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const currentEvents = events[activeSport] || []
+  useEffect(() => {
+    setLoading(true)
+    getEvents(activeSport)
+      .then(data => setDbEvents(data.map(normalizeEvent)))
+      .catch(() => setDbEvents([]))
+      .finally(() => setLoading(false))
+  }, [activeSport])
+
+  const currentEvents = dbEvents.length > 0 ? dbEvents : (localEvents[activeSport] || [])
 
   const grouped = currentEvents.reduce((acc, match) => {
     if (!acc[match.league]) acc[match.league] = []
@@ -32,7 +63,6 @@ export default function Body({ onAuthOpen }) {
       <div className="main-part">
         <div className="left-side">
           <span className="label">События</span>
-
           <div className="sports-nav">
             {NAV_SPORTS.map(sport => (
               <button
@@ -46,14 +76,15 @@ export default function Body({ onAuthOpen }) {
             <Link to="/all-sports" className="show-all-btn">Показать все →</Link>
           </div>
 
-          {Object.keys(grouped).length > 0 ? (
+          {loading && <div className="empty-events">Загрузка...</div>}
+
+          {!loading && Object.keys(grouped).length > 0 ? (
             Object.entries(grouped).map(([league, matches]) => (
               <div key={league} className="league-section">
                 <div className="league-header-row">
                   <span className="league-icon">🏆</span>
                   <span className="league-title">{league}</span>
                 </div>
-
                 {matches.map(match => (
                   <div className="match-card" key={match.id}>
                     <div className="match-card__teams">
@@ -65,7 +96,6 @@ export default function Body({ onAuthOpen }) {
                       </div>
                       <div className="match-card__time">{match.time}</div>
                     </div>
-
                     <div className="match-card__odds">
                       {['p1', 'x', 'p2'].map(outcome =>
                         match.odds?.[outcome] ? (
@@ -89,7 +119,7 @@ export default function Body({ onAuthOpen }) {
               </div>
             ))
           ) : (
-            <div className="empty-events">Нет событий</div>
+            !loading && <div className="empty-events">Нет событий</div>
           )}
         </div>
 
@@ -102,7 +132,6 @@ export default function Body({ onAuthOpen }) {
             </svg>
           </a>
         </div>
-
       </div>
     </div>
   )

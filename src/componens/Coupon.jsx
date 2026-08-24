@@ -1,39 +1,105 @@
 import { useState } from 'react'
 import { useAuth } from '../AuthContext'
+import { createBet, getUserBets } from '../api'
 
 const OUTCOME_LABELS = { p1: 'П1', x: 'X', p2: 'П2' }
 const QUICK_AMOUNTS = [50, 100, 200, 500]
+const STATUS_MAP = {
+  pending: { icon: '⏳', label: 'Ожидание', color: '#aaa' },
+  won:     { icon: '✅', label: 'Выиграл',  color: '#4caf50' },
+  lost:    { icon: '❌', label: 'Проиграл', color: '#e05555' },
+}
 
 export default function Coupon({ onAuthOpen }) {
-  const { user, coupon, stake, setStake, removeFromCoupon, clearCoupon, betsHistory, setBetsHistory } = useAuth()
-  const [tab, setTab] = useState('coupon') 
-  const [historyTab, setHistoryTab] = useState('pending') 
-  const [betType, setBetType] = useState('express') 
+  const {
+    user, coupon, stake, setStake,
+    removeFromCoupon, clearCoupon,
+    betsHistory, setBetsHistory, refreshBalance,
+  } = useAuth()
+
+  const [tab, setTab] = useState('coupon')
+  const [historyTab, setHistoryTab] = useState('pending')
+  const [betType, setBetType] = useState('express')
+  const [betLoading, setBetLoading] = useState(false)
+  const [betError, setBetError] = useState('')
 
   const items = Object.values(coupon)
   const totalOdd = items.reduce((acc, i) => acc * i.odd, 1)
   const stakeNum = parseFloat(stake) || 0
   const payout = stakeNum > 0 ? (stakeNum * totalOdd).toFixed(2) : null
 
-  const handleBet = () => {
+  const handleBet = async () => {
     if (!user || items.length === 0 || stakeNum <= 0) return
+    setBetLoading(true)
+    setBetError('')
 
-    const newBet = {
-      id: Date.now(),
-      type: betType,
-      items: items.map(i => ({ ...i })),
-      stake: stakeNum,
-      totalOdd: parseFloat(totalOdd.toFixed(2)),
-      payout: parseFloat((stakeNum * totalOdd).toFixed(2)),
-      date: new Date().toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
-      status: 'pending',
+    // Проверяем что все события из БД
+    const notFromDB = items.filter(i => !i.match.fromDB)
+    if (notFromDB.length > 0) {
+      setBetError('Некоторые события недоступны для ставок — добавьте их в БД через Swagger.')
+      setBetLoading(false)
+      return
     }
 
-    setBetsHistory(prev => [newBet, ...prev])
-    clearCoupon()
-    setStake('')
-    setTab('history')
-    setHistoryTab('pending')
+    try {
+      const placedBets = []
+      for (const item of items) {
+        const bet = await createBet(
+          user.id, user.secret,
+          item.match.id, item.outcome, stakeNum,
+        )
+        placedBets.push({ ...item, betId: bet.id, status: bet.status })
+      }
+
+      const newBet = {
+        id: Date.now(),
+        type: betType,
+        items: placedBets,
+        stake: stakeNum,
+        totalOdd: parseFloat(totalOdd.toFixed(2)),
+        payout: parseFloat((stakeNum * totalOdd).toFixed(2)),
+        date: new Date().toLocaleString('ru-RU', {
+          day: '2-digit', month: '2-digit',
+          hour: '2-digit', minute: '2-digit',
+        }),
+        status: 'pending',
+      }
+
+      setBetsHistory(prev => [newBet, ...prev])
+      clearCoupon()
+      setStake('')
+      setTab('history')
+      setHistoryTab('pending')
+      await refreshBalance()
+    } catch (e) {
+      setBetError(e.message || 'Ошибка при размещении ставки')
+    } finally {
+      setBetLoading(false)
+    }
+  }
+
+  const syncHistory = async () => {
+    if (!user) return
+    try {
+      const backendBets = await getUserBets(user.id, user.secret)
+      setBetsHistory(prev => prev.map(histBet => {
+        const updated = {
+          ...histBet,
+          items: histBet.items.map(item => {
+            const b = backendBets.find(bb => bb.id === item.betId)
+            return b ? { ...item, status: b.status } : item
+          }),
+        }
+        const statuses = updated.items.map(i => i.status)
+        if (statuses.every(s => s === 'won')) updated.status = 'won'
+        else if (statuses.some(s => s === 'lost')) updated.status = 'lost'
+        else updated.status = 'pending'
+        return updated
+      }))
+      await refreshBalance()
+    } catch (e) {
+      console.error('Sync error:', e)
+    }
   }
 
   const pendingBets = betsHistory.filter(b => b.status === 'pending')
@@ -43,6 +109,7 @@ export default function Coupon({ onAuthOpen }) {
     <div className="coupon-sidebar">
       <div className="coupon">
 
+        {/* Шапка */}
         <div className="coupon__header">
           <div className="coupon__header-tabs">
             <button
@@ -54,29 +121,25 @@ export default function Coupon({ onAuthOpen }) {
             </button>
             <button
               className={`coupon__header-tab ${tab === 'history' ? 'coupon__header-tab--active' : ''}`}
-              onClick={() => setTab('history')}
+              onClick={() => { setTab('history'); syncHistory() }}
             >
               История
               {pendingBets.length > 0 && <span className="coupon__badge coupon__badge--red">{pendingBets.length}</span>}
             </button>
           </div>
         </div>
-        {tab === 'coupon' && (<>
 
+        {/* ===== КУПОН ===== */}
+        {tab === 'coupon' && (<>
           {items.length > 0 && (
             <div className="coupon__type-tabs">
-              <button
-                className={`coupon__type-tab ${betType === 'single' ? 'coupon__type-tab--active' : ''}`}
-                onClick={() => setBetType('single')}
-              >Ординар</button>
-              <button
-                className={`coupon__type-tab ${betType === 'express' ? 'coupon__type-tab--active' : ''}`}
-                onClick={() => setBetType('express')}
-              >Экспресс</button>
+              <button className={`coupon__type-tab ${betType === 'single' ? 'coupon__type-tab--active' : ''}`}
+                onClick={() => setBetType('single')}>Ординар</button>
+              <button className={`coupon__type-tab ${betType === 'express' ? 'coupon__type-tab--active' : ''}`}
+                onClick={() => setBetType('express')}>Экспресс</button>
             </div>
           )}
 
-      
           {items.length === 0 && (
             <div className="coupon__empty">
               <div className="coupon__empty-icon">🎫</div>
@@ -106,32 +169,26 @@ export default function Coupon({ onAuthOpen }) {
                       </span>
                       <span className="coupon__item-odd">{odd}</span>
                     </div>
-                    <button
-                      className="coupon__item-remove"
-                      onClick={() => removeFromCoupon(`${match.id}_${outcome}`)}
-                    >✕</button>
+                    <button className="coupon__item-remove"
+                      onClick={() => removeFromCoupon(`${match.id}_${outcome}`)}>✕</button>
                   </div>
                   <div className="coupon__item-match">{match.home} — {match.away}</div>
+                  {!match.fromDB && (
+                    <div style={{ fontSize: 11, color: '#e0a020', marginTop: 2 }}>
+                      ⚠️ Событие недоступно для ставок
+                    </div>
+                  )}
                 </div>
               ))}
-
-          
               <div className="coupon__bottom-row">
-                <button className="coupon__delete-all" onClick={clearCoupon}>
-                  🗑 Удалить все...
-                </button>
-                <span className="coupon__total-odd-small">
-                  {totalOdd.toFixed(2)}
-                </span>
+                <button className="coupon__delete-all" onClick={clearCoupon}>🗑 Удалить все...</button>
+                <span className="coupon__total-odd-small">{totalOdd.toFixed(2)}</span>
               </div>
             </div>
           )}
 
-
           {items.length > 0 && (
             <div className="coupon__footer">
-
-          
               {payout && (
                 <div className="coupon__payout">
                   <span>Выигрыш</span>
@@ -140,102 +197,101 @@ export default function Coupon({ onAuthOpen }) {
               )}
               <input
                 className="coupon__stake-input coupon__stake-input--full"
-                type="number"
-                placeholder="Сумма ставки"
+                type="number" placeholder="Сумма ставки"
                 value={stake}
-                onChange={e => setStake(e.target.value)}
+                onChange={e => { setStake(e.target.value); setBetError('') }}
                 min="0"
               />
-
+              {betError && <div className="auth-modal__error">{betError}</div>}
               <button
                 className="coupon__bet-btn coupon__bet-btn--full"
                 onClick={handleBet}
-                disabled={stakeNum <= 0}
+                disabled={stakeNum <= 0 || betLoading}
               >
-                Заключить
+                {betLoading ? 'Размещение...' : 'Заключить'}
               </button>
-
-             
               <div className="coupon__quick-amounts">
                 {QUICK_AMOUNTS.map(a => (
-                  <button
-                    key={a}
-                    className="coupon__quick-btn"
-                    onClick={() => setStake(String(a))}
-                  >{a} ₽</button>
+                  <button key={a} className="coupon__quick-btn"
+                    onClick={() => { setStake(String(a)); setBetError('') }}>{a} ₽</button>
                 ))}
               </div>
-
             </div>
           )}
         </>)}
 
+        {/* ===== ИСТОРИЯ ===== */}
         {tab === 'history' && (<>
           <div className="coupon__type-tabs">
-            <button
-              className={`coupon__type-tab ${historyTab === 'pending' ? 'coupon__type-tab--active' : ''}`}
-              onClick={() => setHistoryTab('pending')}
-            >Нерассчитанные</button>
-            <button
-              className={`coupon__type-tab ${historyTab === 'settled' ? 'coupon__type-tab--active' : ''}`}
-              onClick={() => setHistoryTab('settled')}
-            >Рассчитанные</button>
+            <button className={`coupon__type-tab ${historyTab === 'pending' ? 'coupon__type-tab--active' : ''}`}
+              onClick={() => setHistoryTab('pending')}>Нерассчитанные</button>
+            <button className={`coupon__type-tab ${historyTab === 'settled' ? 'coupon__type-tab--active' : ''}`}
+              onClick={() => setHistoryTab('settled')}>Рассчитанные</button>
           </div>
 
           {historyTab === 'pending' && (
-            pendingBets.length === 0 ? (
-              <div className="coupon__empty">
-                <div className="coupon__empty-icon">⏱️</div>
-                <span className="coupon__empty-text">Событий пока нет</span>
-              </div>
-            ) : (
-              <div className="coupon__items">
-                {pendingBets.map(bet => (
-                  <div className="coupon__history-item" key={bet.id}>
-                    <div className="coupon__history-header">
-                      <span className="coupon__history-type">
-                        {bet.type === 'express' ? 'Экспресс' : 'Ординар'} · {bet.items.length} соб.
-                      </span>
-                      <span className="coupon__history-date">{bet.date}</span>
-                    </div>
-                    {bet.items.map((item, i) => (
-                      <div className="coupon__history-event" key={i}>
-                        <span className="coupon__item-outcome-label">
-                          Исход: <strong>{OUTCOME_LABELS[item.outcome]}</strong>
+            pendingBets.length === 0
+              ? <div className="coupon__empty"><div className="coupon__empty-icon">⏱️</div><span className="coupon__empty-text">Нет нерассчитанных ставок</span></div>
+              : <div className="coupon__items">
+                  {pendingBets.map(bet => (
+                    <div className="coupon__history-item" key={bet.id}>
+                      <div className="coupon__history-header">
+                        <span className="coupon__history-type">
+                          {bet.type === 'express' ? 'Экспресс' : 'Ординар'} · {bet.items.length} соб.
                         </span>
-                        <span className="coupon__item-odd">{item.odd}</span>
+                        <span className="coupon__history-date">{bet.date}</span>
                       </div>
-                    ))}
-                    {bet.items.map((item, i) => (
-                      <div className="coupon__history-match" key={i}>
-                        {item.match.home} — {item.match.away}
+                      {bet.items.map((item, i) => (
+                        <div key={i}>
+                          <div className="coupon__history-event">
+                            <span>Исход: <strong>{OUTCOME_LABELS[item.outcome]}</strong></span>
+                            <span className="coupon__item-odd">{item.odd}</span>
+                          </div>
+                          <div className="coupon__history-match">{item.match.home} — {item.match.away}</div>
+                        </div>
+                      ))}
+                      <div className="coupon__history-footer">
+                        <span>Ставка: <strong>{bet.stake} ₽</strong></span>
+                        <span>Выигрыш: <strong className="coupon__payout-value">{bet.payout} ₽</strong></span>
                       </div>
-                    ))}
-                    <div className="coupon__history-footer">
-                      <span>Ставка: <strong>{bet.stake} ₽</strong></span>
-                      <span>Выигрыш: <strong className="coupon__payout-value">{bet.payout} ₽</strong></span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )
+                  ))}
+                </div>
           )}
 
           {historyTab === 'settled' && (
-            settledBets.length === 0 ? (
-              <div className="coupon__empty">
-                <div className="coupon__empty-icon">📋</div>
-                <span className="coupon__empty-text">Нет рассчитанных ставок</span>
-              </div>
-            ) : (
-              <div className="coupon__items">
-                {settledBets.map(bet => (
-                  <div className="coupon__history-item" key={bet.id}>
-                    <span>{bet.date} · {bet.stake} ₽</span>
-                  </div>
-                ))}
-              </div>
-            )
+            settledBets.length === 0
+              ? <div className="coupon__empty"><div className="coupon__empty-icon">📋</div><span className="coupon__empty-text">Нет рассчитанных ставок</span></div>
+              : <div className="coupon__items">
+                  {settledBets.map(bet => {
+                    const s = STATUS_MAP[bet.status] || STATUS_MAP.pending
+                    return (
+                      <div className="coupon__history-item" key={bet.id}>
+                        <div className="coupon__history-header">
+                          <span className="coupon__history-type">
+                            {bet.type === 'express' ? 'Экспресс' : 'Ординар'}
+                          </span>
+                          <span style={{ color: s.color }}>{s.icon} {s.label}</span>
+                        </div>
+                        {bet.items.map((item, i) => (
+                          <div key={i}>
+                            <div className="coupon__history-event">
+                              <span>Исход: <strong>{OUTCOME_LABELS[item.outcome]}</strong></span>
+                              <span className="coupon__item-odd">{item.odd}</span>
+                            </div>
+                            <div className="coupon__history-match">{item.match.home} — {item.match.away}</div>
+                          </div>
+                        ))}
+                        <div className="coupon__history-footer">
+                          <span>Ставка: <strong>{bet.stake} ₽</strong></span>
+                          <span style={{ color: s.color }}>
+                            {bet.status === 'won' ? `+${bet.payout} ₽` : `-${bet.stake} ₽`}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
           )}
         </>)}
 

@@ -2,7 +2,7 @@ import { useAuth } from '../AuthContext'
 
 const OUTCOME_LABELS = { p1: 'П1', x: 'X', p2: 'П2' }
 
-export default function RightPanel({ title, data, onAuthOpen }) {
+export default function RightPanel({ title, data, loading, onAuthOpen }) {
   const { user, coupon, toggleOdd } = useAuth()
 
   const handleOddClick = (match, outcome) => {
@@ -24,33 +24,50 @@ export default function RightPanel({ title, data, onAuthOpen }) {
         <h1 className="sport-title">{title}</h1>
       </div>
       <div className="events-container">
-        {Object.keys(grouped).length > 0 ? (
+        {loading && <div className="empty">Загрузка...</div>}
+
+        {!loading && Object.keys(grouped).length > 0 ? (
           Object.entries(grouped).map(([league, matches]) => (
             <div key={league} className="league-group">
-              <h3 className="league-name">{league}</h3>
+              <div className="league-header-row">
+                <span className="league-icon">🏆</span>
+                <span className="league-title">{league}</span>
+              </div>
               {matches.map(m => (
-                <div key={m.id} className="match-row">
-                  <div className="match-info">
-                    <span className="teams">{m.home} — {m.away}</span>
-                    <span className="time">{m.time}</span>
+                <div className="match-card" key={m.id}>
+                  <div className="match-card__teams">
+                    <div className="match-card__team">
+                      <span className="match-card__team-name">{m.home}</span>
+                    </div>
+                    <div className="match-card__team">
+                      <span className="match-card__team-name">{m.away}</span>
+                    </div>
+                    <div className="match-card__time">{m.time}</div>
                   </div>
-                  <div className="odds">
-                    {['p1', 'x', 'p2'].map(outcome => (
-                      <button
-                        key={outcome}
-                        className={`odd ${isActive(m.id, outcome) ? 'odd--active' : ''}`}
-                        onClick={() => handleOddClick(m, outcome)}
-                      >
-                        {OUTCOME_LABELS[outcome]} {m.odds?.[outcome] ?? '-'}
-                      </button>
-                    ))}
+                  <div className="match-card__odds">
+                    {['p1', 'x', 'p2'].map(outcome =>
+                      m.odds?.[outcome] ? (
+                        <button
+                          key={outcome}
+                          className={`match-card__odd ${isActive(m.id, outcome) ? 'match-card__odd--active' : ''}`}
+                          onClick={() => handleOddClick(m, outcome)}
+                        >
+                          <span className="match-card__odd-label">{OUTCOME_LABELS[outcome]}</span>
+                          <span className="match-card__odd-value">{m.odds[outcome]}</span>
+                        </button>
+                      ) : null
+                    )}
+                    <button className="match-card__odd match-card__odd--more">
+                      <span className="match-card__odd-label">Ещё</span>
+                      <span className="match-card__odd-value">+ 200</span>
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           ))
         ) : (
-          <div className="empty">Нет событий</div>
+          !loading && <div className="empty">Нет событий</div>
         )}
       </div>
     </main>

@@ -90,7 +90,9 @@ export function AuthProvider({ children }) {
     })
   }
 
-  const removeFromCoupon = (key) => setCoupon(prev => { const n = { ...prev }; delete n[key]; return n })
+  const removeFromCoupon = (key) =>
+    setCoupon(prev => { const n = { ...prev }; delete n[key]; return n })
+
   const clearCoupon = () => setCoupon({})
 
   return (

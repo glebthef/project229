@@ -15,14 +15,10 @@ async function request(path, options = {}) {
 export const register = (login, password) =>
   request("/users", { method: "POST", body: JSON.stringify({ login, password }) })
 
-export const getUser = (userId) =>
-  request(`/users/${userId}`)
+export const getUser = (userId) => request(`/users/${userId}`)
 
 export const patchBalance = (userId, amount) =>
-  request(`/users/${userId}/balance`, {
-    method: "PATCH",
-    body: JSON.stringify({ amount }),
-  })
+  request(`/users/${userId}/balance`, { method: "PATCH", body: JSON.stringify({ amount }) })
 
 export const createSession = (login, password) =>
   request("/sessions", { method: "POST", headers: { login, password } })
@@ -41,6 +37,4 @@ export const createBet = (userId, secret, eventId, outcome, amount) =>
   })
 
 export const getUserBets = (userId, secret) =>
-  request(`/users/${userId}/bets`, {
-    headers: { "session-secret": secret },
-  })
+  request(`/users/${userId}/bets`, { headers: { "session-secret": secret } })

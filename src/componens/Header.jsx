@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import DepositModal from './DepositModal'
 
 export default function Header({ isLight, onToggle, onAuthOpen }) {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshBalance } = useAuth()
   const [depositOpen, setDepositOpen] = useState(false)
+
+  // Обновляем баланс из БД при каждом входе
+  useEffect(() => {
+    if (user) refreshBalance()
+  }, [user?.id])
 
   return (
     <>
@@ -26,7 +31,7 @@ export default function Header({ isLight, onToggle, onAuthOpen }) {
             <>
               <div className="header-balance" onClick={() => setDepositOpen(true)}>
                 <span className="header-balance__amount">
-                  {(user.balance || 0).toLocaleString()} ₽
+                  {(user.balance || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽
                 </span>
                 <button className="header-balance__deposit">+</button>
               </div>
