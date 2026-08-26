@@ -72,6 +72,7 @@ export default function Coupon({ onAuthOpen }) {
       setHistoryTab('pending')
       await refreshBalance()
     } catch (e) {
+      console.error('Bet error:', e)
       setBetError(e.message || 'Ошибка при размещении ставки')
     } finally {
       setBetLoading(false)

@@ -7,7 +7,13 @@ async function request(path, options = {}) {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Ошибка сервера" }))
-    throw new Error(err.detail || "Ошибка")
+  
+    if (typeof err.detail === 'string') throw new Error(err.detail)
+    if (Array.isArray(err.detail)) {
+      const msg = err.detail.map(e => `${e.loc?.join('.')}: ${e.msg}`).join('; ')
+      throw new Error(msg)
+    }
+    throw new Error(JSON.stringify(err))
   }
   return res.json()
 }
@@ -33,7 +39,11 @@ export const createBet = (userId, secret, eventId, outcome, amount) =>
   request(`/users/${userId}/bets`, {
     method: "POST",
     headers: { "session-secret": secret },
-    body: JSON.stringify({ event_id: eventId, outcome, amount }),
+    body: JSON.stringify({
+      event_id: parseInt(eventId),     
+      outcome: String(outcome),         
+      amount: parseFloat(amount),        
+    }),
   })
 
 export const getUserBets = (userId, secret) =>

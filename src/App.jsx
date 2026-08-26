@@ -10,6 +10,7 @@ import './App.css'
 import Rules from './componens/Rules'
 import Conf from './componens/Conf'
 import Contacts from './componens/Contacts'
+import Profile from './componens/Profile'
 import { ChatProvider } from './ChatContext'
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/rules" element={<Rules />} />
             <Route path="/confidentiality" element={<Conf />} />
             <Route path="/contacts" element={<Contacts />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/" element={<Body onAuthOpen={() => setAuthOpen(true)} />} />
             <Route path="/all-sports" element={<MainLayout onAuthOpen={() => setAuthOpen(true)} />} />
             <Route path="/all-sports/cybersport" element={<MainLayout onAuthOpen={() => setAuthOpen(true)} initialSport="cybersport" />} />

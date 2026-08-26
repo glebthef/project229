@@ -7,7 +7,6 @@ export default function Header({ isLight, onToggle, onAuthOpen }) {
   const { user, logout, refreshBalance } = useAuth()
   const [depositOpen, setDepositOpen] = useState(false)
 
-  // Обновляем баланс из БД при каждом входе
   useEffect(() => {
     if (user) refreshBalance()
   }, [user?.id])
@@ -35,7 +34,7 @@ export default function Header({ isLight, onToggle, onAuthOpen }) {
                 </span>
                 <button className="header-balance__deposit">+</button>
               </div>
-              <span className="header-username">👤 {user.login}</span>
+              <Link to="/profile" className="header-username">👤 {user.login}</Link>
               <button className="hbtn btn-sign" onClick={logout}>Выйти</button>
             </>
           ) : (
