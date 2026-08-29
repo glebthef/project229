@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import Coupon from './Coupon'
@@ -24,6 +24,7 @@ function normalizeEvent(e) {
       : '',
     odds: { p1: e.odd_p1 ?? null, x: e.odd_x ?? null, p2: e.odd_p2 ?? null },
     status: e.status,
+    is_active: e.is_active,
     fromDB: true,
   }
 }
@@ -35,7 +36,7 @@ export default function Body({ onAuthOpen }) {
   const [dbEvents, setDbEvents] = useState([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
+  const loadEvents = useCallback(() => {
     setLoading(true)
     getEvents(activeSport)
       .then(data => setDbEvents(data.map(normalizeEvent)))
@@ -43,7 +44,19 @@ export default function Body({ onAuthOpen }) {
       .finally(() => setLoading(false))
   }, [activeSport])
 
-  const currentEvents = dbEvents.length > 0 ? dbEvents : (localEvents[activeSport] || [])
+  // Загружаем при смене спорта
+  useEffect(() => { loadEvents() }, [loadEvents])
+
+  // Автообновление каждые 30 секунд
+  useEffect(() => {
+    const interval = setInterval(loadEvents, 30000)
+    return () => clearInterval(interval)
+  }, [loadEvents])
+
+  // Только активные события из БД
+  const currentEvents = dbEvents.length > 0
+    ? dbEvents.filter(e => e.is_active)
+    : (localEvents[activeSport] || [])
 
   const grouped = currentEvents.reduce((acc, match) => {
     if (!acc[match.league]) acc[match.league] = []
@@ -53,6 +66,7 @@ export default function Body({ onAuthOpen }) {
 
   const handleOddClick = (match, outcome) => {
     if (!user) { onAuthOpen(); return }
+    if (!match.fromDB) { onAuthOpen(); return }
     toggleOdd(match, outcome)
   }
 
@@ -109,10 +123,6 @@ export default function Body({ onAuthOpen }) {
                           </button>
                         ) : null
                       )}
-                      <button className="match-card__odd match-card__odd--more">
-                        <span className="match-card__odd-label">Ещё</span>
-                        <span className="match-card__odd-value">+ 200</span>
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -124,7 +134,7 @@ export default function Body({ onAuthOpen }) {
         </div>
 
         <div className="right-side">
-          <Coupon onAuthOpen={onAuthOpen} />
+          <Coupon onAuthOpen={onAuthOpen} onEventsUpdate={loadEvents} />
           <a href="#" className="support-btn" aria-label="Поддержка"
             onClick={e => { e.preventDefault(); toggleChat() }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

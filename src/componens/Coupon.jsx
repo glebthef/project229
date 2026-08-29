@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../AuthContext'
 import { createBet, getUserBets } from '../api'
 
@@ -10,7 +10,7 @@ const STATUS_MAP = {
   lost:    { icon: '❌', label: 'Проиграл', color: '#e05555' },
 }
 
-export default function Coupon({ onAuthOpen }) {
+export default function Coupon({ onAuthOpen, onEventsUpdate }) {
   const {
     user, coupon, stake, setStake,
     removeFromCoupon, clearCoupon,
@@ -28,15 +28,24 @@ export default function Coupon({ onAuthOpen }) {
   const stakeNum = parseFloat(stake) || 0
   const payout = stakeNum > 0 ? (stakeNum * totalOdd).toFixed(2) : null
 
+  // Автосинхронизация каждые 15 секунд если есть нерассчитанные ставки
+  const pendingBets = betsHistory.filter(b => b.status === 'pending')
+  const settledBets = betsHistory.filter(b => b.status !== 'pending')
+
+  useEffect(() => {
+    if (!user || pendingBets.length === 0) return
+    const interval = setInterval(() => syncHistory(false), 15000)
+    return () => clearInterval(interval)
+  }, [user, pendingBets.length])
+
   const handleBet = async () => {
     if (!user || items.length === 0 || stakeNum <= 0) return
     setBetLoading(true)
     setBetError('')
 
-    // Проверяем что все события из БД
     const notFromDB = items.filter(i => !i.match.fromDB)
     if (notFromDB.length > 0) {
-      setBetError('Некоторые события недоступны для ставок — добавьте их в БД через Swagger.')
+      setBetError('Некоторые события недоступны — выбери события из списка на сайте.')
       setBetLoading(false)
       return
     }
@@ -79,32 +88,37 @@ export default function Coupon({ onAuthOpen }) {
     }
   }
 
-  const syncHistory = async () => {
+  const syncHistory = async (showTab = true) => {
     if (!user) return
+    if (showTab) { setTab('history') }
     try {
       const backendBets = await getUserBets(user.id, user.secret)
-      setBetsHistory(prev => prev.map(histBet => {
-        const updated = {
-          ...histBet,
-          items: histBet.items.map(item => {
-            const b = backendBets.find(bb => bb.id === item.betId)
-            return b ? { ...item, status: b.status } : item
-          }),
-        }
-        const statuses = updated.items.map(i => i.status)
-        if (statuses.every(s => s === 'won')) updated.status = 'won'
-        else if (statuses.some(s => s === 'lost')) updated.status = 'lost'
-        else updated.status = 'pending'
-        return updated
-      }))
-      await refreshBalance()
+
+      let hasChanges = false
+      const updated = betsHistory.map(histBet => {
+        const newItems = histBet.items.map(item => {
+          const b = backendBets.find(bb => bb.id === item.betId)
+          if (b && b.status !== item.status) { hasChanges = true; return { ...item, status: b.status } }
+          return item
+        })
+        const statuses = newItems.map(i => i.status)
+        let newStatus = histBet.status
+        if (statuses.every(s => s === 'won')) newStatus = 'won'
+        else if (statuses.every(s => s !== 'pending')) newStatus = 'lost'
+        if (newStatus !== histBet.status) hasChanges = true
+        return { ...histBet, items: newItems, status: newStatus }
+      })
+
+      if (hasChanges) {
+        setBetsHistory(updated)
+        await refreshBalance()
+        // Обновляем список событий если статусы изменились
+        if (onEventsUpdate) onEventsUpdate()
+      }
     } catch (e) {
       console.error('Sync error:', e)
     }
   }
-
-  const pendingBets = betsHistory.filter(b => b.status === 'pending')
-  const settledBets = betsHistory.filter(b => b.status !== 'pending')
 
   return (
     <div className="coupon-sidebar">
@@ -122,7 +136,7 @@ export default function Coupon({ onAuthOpen }) {
             </button>
             <button
               className={`coupon__header-tab ${tab === 'history' ? 'coupon__header-tab--active' : ''}`}
-              onClick={() => { setTab('history'); syncHistory() }}
+              onClick={() => syncHistory(true)}
             >
               История
               {pendingBets.length > 0 && <span className="coupon__badge coupon__badge--red">{pendingBets.length}</span>}
@@ -232,7 +246,10 @@ export default function Coupon({ onAuthOpen }) {
 
           {historyTab === 'pending' && (
             pendingBets.length === 0
-              ? <div className="coupon__empty"><div className="coupon__empty-icon">⏱️</div><span className="coupon__empty-text">Нет нерассчитанных ставок</span></div>
+              ? <div className="coupon__empty">
+                  <div className="coupon__empty-icon">⏱️</div>
+                  <span className="coupon__empty-text">Нет нерассчитанных ставок</span>
+                </div>
               : <div className="coupon__items">
                   {pendingBets.map(bet => (
                     <div className="coupon__history-item" key={bet.id}>
@@ -253,7 +270,7 @@ export default function Coupon({ onAuthOpen }) {
                       ))}
                       <div className="coupon__history-footer">
                         <span>Ставка: <strong>{bet.stake} ₽</strong></span>
-                        <span>Выигрыш: <strong className="coupon__payout-value">{bet.payout} ₽</strong></span>
+                        <span>Возможный выигрыш: <strong className="coupon__payout-value">{bet.payout} ₽</strong></span>
                       </div>
                     </div>
                   ))}
@@ -262,7 +279,10 @@ export default function Coupon({ onAuthOpen }) {
 
           {historyTab === 'settled' && (
             settledBets.length === 0
-              ? <div className="coupon__empty"><div className="coupon__empty-icon">📋</div><span className="coupon__empty-text">Нет рассчитанных ставок</span></div>
+              ? <div className="coupon__empty">
+                  <div className="coupon__empty-icon">📋</div>
+                  <span className="coupon__empty-text">Нет рассчитанных ставок</span>
+                </div>
               : <div className="coupon__items">
                   {settledBets.map(bet => {
                     const s = STATUS_MAP[bet.status] || STATUS_MAP.pending
@@ -272,7 +292,7 @@ export default function Coupon({ onAuthOpen }) {
                           <span className="coupon__history-type">
                             {bet.type === 'express' ? 'Экспресс' : 'Ординар'}
                           </span>
-                          <span style={{ color: s.color }}>{s.icon} {s.label}</span>
+                          <span style={{ color: s.color, fontWeight: 600 }}>{s.icon} {s.label}</span>
                         </div>
                         {bet.items.map((item, i) => (
                           <div key={i}>
@@ -285,7 +305,7 @@ export default function Coupon({ onAuthOpen }) {
                         ))}
                         <div className="coupon__history-footer">
                           <span>Ставка: <strong>{bet.stake} ₽</strong></span>
-                          <span style={{ color: s.color }}>
+                          <span style={{ color: s.color, fontWeight: 700 }}>
                             {bet.status === 'won' ? `+${bet.payout} ₽` : `-${bet.stake} ₽`}
                           </span>
                         </div>

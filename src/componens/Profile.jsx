@@ -33,7 +33,6 @@ export default function Profile() {
     <div className="profile-page">
       <div className="profile-container">
 
-        {/* Шапка профиля */}
         <div className="profile-hero">
           <div className="profile-avatar">
             {user.login.charAt(0).toUpperCase()}
@@ -43,8 +42,6 @@ export default function Profile() {
             <span className="profile-hero__id">ID: {user.id}</span>
           </div>
         </div>
-
-        {/* Карточки статистики */}
         <div className="profile-stats">
           <div className="profile-stat-card profile-stat-card--balance">
             <div className="profile-stat-card__icon">💰</div>
@@ -100,8 +97,6 @@ export default function Profile() {
             </div>
           </div>
         </div>
-
-        {/* История ставок */}
         <div className="profile-section">
           <h2 className="profile-section__title">История ставок</h2>
 
@@ -141,8 +136,6 @@ export default function Profile() {
             </div>
           )}
         </div>
-
-        {/* Кнопка выхода */}
         <button className="profile-logout" onClick={() => { logout(); navigate('/') }}>
           Выйти из аккаунта
         </button>
