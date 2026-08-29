@@ -57,7 +57,7 @@ export const createBet = (userId, secret, eventId, outcome, amount) => {
     amount: parseFloat(amount),
   }
   console.log('createBet →', payload)
-  return request(`/users/${userId}/bets`ç, {
+  return request(`/users/${userId}/bets`, {
     method: "POST",
     headers: { "session-secret": secret },
     body: JSON.stringify(payload),
