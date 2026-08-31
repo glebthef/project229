@@ -2834,3 +2834,290 @@ body {
   font-size: 12px;
   color: #e0a020;
 }
+
+/* ================================================
+   ПОИСК И ФИЛЬТРЫ — добавь в конец App.css
+   ================================================ */
+.events-toolbar {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.events-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.events-search__icon {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.events-search__input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 9px 36px 9px 36px;
+  font-size: 13px;
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.events-search__input:focus { border-color: var(--accent-gold); }
+.events-search__input::placeholder { color: var(--text-muted); }
+
+.events-search__clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.events-search__clear:hover { color: var(--text-main); }
+
+.events-sort {
+  display: flex;
+  gap: 6px;
+}
+
+.events-sort__btn {
+  padding: 5px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.events-sort__btn:hover { color: var(--text-main); border-color: var(--text-muted); }
+
+.events-sort__btn--active {
+  background: rgba(212,175,55,0.1);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+/* Количество событий в лиге */
+.league-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-input);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+/* Кнопка Ещё с выбранными */
+.match-card__odd--has-selected {
+  border-color: var(--accent-gold) !important;
+  color: var(--accent-gold);
+}
+
+/* ================================================
+   МОДАЛКА МАТЧА — добавь в конец App.css
+   ================================================ */
+.match-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease; padding: 20px;
+}
+
+.match-modal {
+  width: 100%; max-width: 600px; max-height: 85vh;
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 16px; overflow-y: auto;
+  animation: slideUp 0.25s ease;
+  display: flex; flex-direction: column;
+}
+
+.match-modal::-webkit-scrollbar { width: 4px; }
+.match-modal::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+
+.match-modal__header {
+  position: sticky; top: 0;
+  background: var(--bg-card); border-bottom: 1px solid var(--border-color);
+  padding: 18px 20px 14px;
+  display: flex; flex-direction: column; gap: 5px; z-index: 1;
+}
+
+.match-modal__teams {
+  display: flex; align-items: center; gap: 12px; padding-right: 28px;
+}
+
+.match-modal__team {
+  font-size: 17px; font-weight: 700; color: var(--text-main); flex: 1;
+}
+
+.match-modal__team--right { text-align: right; }
+.match-modal__vs { font-size: 12px; color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
+
+.match-modal__meta {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+
+.match-modal__league { font-size: 12px; color: var(--text-muted); }
+.match-modal__time { font-size: 12px; color: var(--accent-gold); font-weight: 600; }
+.match-modal__selected {
+  font-size: 12px; color: #4caf50; font-weight: 600;
+  background: rgba(76,175,80,0.1); padding: 2px 8px; border-radius: 6px;
+}
+
+.match-modal__close {
+  position: absolute; top: 15px; right: 15px;
+  background: none; border: none; font-size: 18px;
+  color: var(--text-muted); cursor: pointer; transition: color 0.2s;
+}
+.match-modal__close:hover { color: var(--text-main); }
+
+.match-modal__warn {
+  padding: 10px 20px;
+  background: rgba(224,160,32,0.1);
+  border-bottom: 1px solid rgba(224,160,32,0.2);
+  font-size: 12px; color: #e0a020;
+}
+
+.match-modal__hint {
+  padding: 8px 20px;
+  font-size: 12px; color: var(--text-muted);
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.match-modal__stream {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px; background: var(--bg-input);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.match-modal__stream-icon { font-size: 20px; }
+.match-modal__stream-info { flex: 1; }
+.match-modal__stream-title { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.match-modal__stream-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+.match-modal__stream-btn {
+  padding: 7px 14px; background: var(--accent-gold);
+  border: none; border-radius: 8px;
+  font-size: 12px; font-weight: 700; color: #000; cursor: pointer; flex-shrink: 0;
+}
+.match-modal__stream-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.match-modal__body {
+  padding: 16px 20px; display: flex; flex-direction: column; gap: 18px;
+}
+
+.match-modal__group-title {
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+}
+
+.match-modal__group-odds {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px;
+}
+
+.match-modal__odd {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; background: var(--bg-odd);
+  border: 1px solid var(--border-color); border-radius: 10px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s; gap: 6px;
+}
+
+.match-modal__odd:hover { border-color: var(--accent-gold); background: rgba(212,175,55,0.06); }
+
+.match-modal__odd--active {
+  background: var(--accent-gold) !important;
+  border-color: var(--accent-gold) !important;
+}
+
+.match-modal__odd--active .match-modal__odd-label,
+.match-modal__odd--active .match-modal__odd-value { color: #000 !important; }
+
+.match-modal__odd-label { font-size: 12px; color: var(--text-secondary); text-align: left; flex: 1; }
+.match-modal__odd-value { font-size: 14px; font-weight: 700; color: var(--text-main); }
+
+.match-modal__footer {
+  position: sticky; bottom: 0;
+  padding: 14px 20px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+}
+
+.match-modal__add-btn {
+  width: 100%; padding: 13px;
+  background: var(--accent-gold); border: none; border-radius: 10px;
+  font-size: 14px; font-weight: 700; color: #000;
+  cursor: pointer; transition: opacity 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.match-modal__add-btn:hover { opacity: 0.9; }
+/* ================================================
+   СТИЛИ КОНФЛИКТОВ — добавь в конец App.css
+   ================================================ */
+
+/* Баннер конфликта в купоне */
+.coupon__conflict-banner {
+  padding: 10px 14px;
+  background: rgba(224, 85, 85, 0.12);
+  border-bottom: 1px solid rgba(224, 85, 85, 0.25);
+  font-size: 12px;
+  color: #e05555;
+  font-weight: 600;
+}
+
+/* Исход с конфликтом в купоне */
+.coupon__item--conflict {
+  border-left: 3px solid #e05555;
+  background: rgba(224, 85, 85, 0.05) !important;
+}
+
+.coupon__item-conflict-msg {
+  font-size: 11px;
+  color: #e05555;
+  margin-top: 4px;
+}
+
+.coupon__item-odd--conflict {
+  color: #e05555 !important;
+}
+
+/* Кнопка заблокирована из-за конфликта */
+.coupon__bet-btn--disabled {
+  background: #555 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+}
+
+/* Исход конфликтует в модалке */
+.match-modal__odd--conflict {
+  opacity: 0.45;
+  border-style: dashed !important;
+  cursor: not-allowed !important;
+}
+
+.match-modal__odd--conflict:hover {
+  border-color: #e05555 !important;
+  background: rgba(224, 85, 85, 0.06) !important;
+}
+
+.match-modal__conflict-icon {
+  font-size: 11px;
+}

@@ -3,6 +3,23 @@ import { createSession, deleteSession, getUser, register as apiRegister } from '
 
 const AuthContext = createContext(null)
 
+const CONFLICT_GROUPS = [
+  ['p1', 'x', 'p2'],
+  ['total_over', 'total_under'],
+  ['handicap_home', 'handicap_away'],
+]
+
+export function checkConflict(a, b) {
+  return CONFLICT_GROUPS.some(g => g.includes(a) && g.includes(b))
+}
+
+export function getOutcomeGroup(outcome) {
+  if (['p1','x','p2'].includes(outcome)) return 'основной исход'
+  if (['total_over','total_under'].includes(outcome)) return 'тотал'
+  if (['handicap_home','handicap_away'].includes(outcome)) return 'фора'
+  return outcome
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('user')
@@ -80,11 +97,25 @@ export function AuthProvider({ children }) {
       const next = { ...prev }
       if (next[key]) {
         delete next[key]
-      } else {
-        Object.keys(next).forEach(k => {
-          if (k.startsWith(`${match.id}_`)) delete next[k]
-        })
-        next[key] = { match, outcome, odd: match.odds[outcome] }
+        return next
+      }
+      const existingKeys = Object.keys(next).filter(k => k.startsWith(`${match.id}_`))
+      let conflict = false
+      let conflictWith = null
+      for (const ek of existingKeys) {
+        const eo = ek.replace(`${match.id}_`, '')
+        if (checkConflict(eo, outcome)) {
+          conflict = true
+          conflictWith = eo
+          break
+        }
+      }
+      next[key] = {
+        match,
+        outcome,
+        odd: match.odds?.[outcome] ?? null,
+        conflict,
+        conflictWith,
       }
       return next
     })
