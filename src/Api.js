@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:8000"
+const BASE_URL = "http://193.178.158.110:8000"
 
 async function request(path, options = {}) {
   const { headers: extraHeaders, ...rest } = options
