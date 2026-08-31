@@ -47,7 +47,7 @@ export function ChatProvider({ children }) {
     setMessages(prev => [...prev, userMsg])
     setInput('')
 
-    // Автоответ поддержки через 1.5 секунды
+
     setIsTyping(true)
     setTimeout(() => {
       setIsTyping(false)

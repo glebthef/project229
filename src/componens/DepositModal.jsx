@@ -34,9 +34,9 @@ export default function DepositModal({ onClose }) {
     const num = parseFloat(amount)
     setLoading(true)
     try {
-      // Записываем в БД
+      
       await patchBalance(user.id, num)
-      // Обновляем локально
+      
       updateBalance(num)
       setStep('success')
     } catch (e) {

@@ -2,7 +2,6 @@ import { useAuth } from '../AuthContext'
 
 const OUTCOME_LABELS = { p1: 'П1', x: 'X', p2: 'П2' }
 
-// Расширенные исходы — генерируются на основе базовых коэффициентов
 function generateExtraOdds(match) {
   const { p1, x, p2 } = match.odds
   return [
@@ -48,7 +47,7 @@ export default function MatchModal({ match, onClose, onAuthOpen }) {
 
   const handleOddClick = (outcome, odd) => {
     if (!user) { onClose(); onAuthOpen(); return }
-    // Создаём виртуальный исход с нужным коэффициентом
+
     toggleOdd({ ...match, odds: { ...match.odds, [outcome]: odd } }, outcome)
   }
 
@@ -74,7 +73,7 @@ export default function MatchModal({ match, onClose, onAuthOpen }) {
           <button className="match-modal__close" onClick={onClose}>✕</button>
         </div>
 
-        {/* Трансляция — заглушка */}
+        {/* Трансляция */}
         <div className="match-modal__stream">
           <div className="match-modal__stream-icon">📺</div>
           <div className="match-modal__stream-text">

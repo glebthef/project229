@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useAuth, checkConflict, getOutcomeGroup } from '../AuthContext'
 
-// ===== МОДАЛКА — одинаковая с Body.jsx =====
 function MatchModal({ match, onClose, onAuthOpen }) {
   const { user, coupon, toggleOdd } = useAuth()
   const isActive = (key) => !!coupon[`${match.id}_${key}`]
@@ -103,7 +102,7 @@ function MatchModal({ match, onClose, onAuthOpen }) {
   )
 }
 
-// ===== RIGHT PANEL =====
+
 export default function RightPanel({ title, data, loading, onAuthOpen }) {
   const { user, coupon, toggleOdd } = useAuth()
   const [selectedMatch, setSelectedMatch] = useState(null)

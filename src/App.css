@@ -2736,7 +2736,6 @@ body {
   border-color: #e05555;
 }
 
-/* Имя пользователя — ссылка на профиль */
 .header-username {
   font-size: 14px;
   font-weight: 600;
@@ -2749,9 +2748,6 @@ body {
   color: var(--accent-gold);
 }
 
-/* ================================================
-   МОДАЛЬНОЕ ОКНО МАТЧА — добавь в конец App.css
-   ================================================ */
 .match-modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.75);
@@ -2826,7 +2822,7 @@ body {
 .match-modal__odd-label { font-size: 12px; color: var(--text-secondary); text-align: left; flex: 1; }
 .match-modal__odd-value { font-size: 14px; font-weight: 700; color: var(--text-main); font-family: 'Inter', sans-serif; }
 
-/* Предупреждение в модалке о демо-событии */
+
 .match-modal__warn {
   padding: 10px 20px;
   background: rgba(224, 160, 32, 0.1);
@@ -2835,9 +2831,7 @@ body {
   color: #e0a020;
 }
 
-/* ================================================
-   ПОИСК И ФИЛЬТРЫ — добавь в конец App.css
-   ================================================ */
+
 .events-toolbar {
   padding: 12px 16px;
   display: flex;
@@ -2914,7 +2908,7 @@ body {
   color: var(--accent-gold);
 }
 
-/* Количество событий в лиге */
+
 .league-count {
   margin-left: auto;
   font-size: 11px;
@@ -2924,7 +2918,7 @@ body {
   border-radius: 10px;
 }
 
-/* Кнопка Ещё с выбранными */
+
 .match-card__odd--has-selected {
   border-color: var(--accent-gold) !important;
   color: var(--accent-gold);
@@ -3069,11 +3063,7 @@ body {
 }
 
 .match-modal__add-btn:hover { opacity: 0.9; }
-/* ================================================
-   СТИЛИ КОНФЛИКТОВ — добавь в конец App.css
-   ================================================ */
 
-/* Баннер конфликта в купоне */
 .coupon__conflict-banner {
   padding: 10px 14px;
   background: rgba(224, 85, 85, 0.12);
@@ -3083,7 +3073,6 @@ body {
   font-weight: 600;
 }
 
-/* Исход с конфликтом в купоне */
 .coupon__item--conflict {
   border-left: 3px solid #e05555;
   background: rgba(224, 85, 85, 0.05) !important;
@@ -3099,14 +3088,13 @@ body {
   color: #e05555 !important;
 }
 
-/* Кнопка заблокирована из-за конфликта */
+
 .coupon__bet-btn--disabled {
   background: #555 !important;
   color: #999 !important;
   cursor: not-allowed !important;
 }
 
-/* Исход конфликтует в модалке */
 .match-modal__odd--conflict {
   opacity: 0.45;
   border-style: dashed !important;
