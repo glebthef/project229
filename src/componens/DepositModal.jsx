@@ -34,9 +34,7 @@ export default function DepositModal({ onClose }) {
     const num = parseFloat(amount)
     setLoading(true)
     try {
-      
-      await patchBalance(user.id, num)
-      
+      await patchBalance(user.id, user.secret, num)
       updateBalance(num)
       setStep('success')
     } catch (e) {
@@ -75,17 +73,15 @@ export default function DepositModal({ onClose }) {
             ))}
           </div>
           <div className="coupon__stake-row">
-            <input
-              className="coupon__stake-input auth-modal__input"
+            <input className="coupon__stake-input auth-modal__input"
               type="number" placeholder="Другая сумма"
               value={amount} min="1"
-              onChange={e => { setAmount(e.target.value); setError('') }}
-            />
+              onChange={e => { setAmount(e.target.value); setError('') }} />
             <span className="coupon__currency">₽</span>
           </div>
           {error && <div className="auth-modal__error">{error}</div>}
           <button className="auth-modal__submit" onClick={handleNext}>Продолжить</button>
-          <div className="deposit__note">🔒 Платёж защищён шифрованием. Средства зачисляются мгновенно.</div>
+          <div className="deposit__note">🔒 Платёж защищён шифрованием.</div>
         </>)}
 
         {step === 'confirm' && (<>
@@ -96,7 +92,7 @@ export default function DepositModal({ onClose }) {
               <span>{selectedMethod?.icon} {selectedMethod?.name}</span>
             </div>
             <div className="deposit__summary-row deposit__summary-row--total">
-              <span>Сумма пополнения</span>
+              <span>Сумма</span>
               <span className="deposit__summary-amount">{parseFloat(amount).toLocaleString()} ₽</span>
             </div>
           </div>
@@ -110,7 +106,7 @@ export default function DepositModal({ onClose }) {
         {step === 'success' && (<>
           <div className="deposit__success-icon">✅</div>
           <div className="deposit__success-title">Счёт пополнен!</div>
-          <div className="deposit__success-sub">+{parseFloat(amount).toLocaleString()} ₽ зачислено на ваш баланс</div>
+          <div className="deposit__success-sub">+{parseFloat(amount).toLocaleString()} ₽ зачислено</div>
           <button className="auth-modal__submit" onClick={onClose}>Готово</button>
         </>)}
       </div>

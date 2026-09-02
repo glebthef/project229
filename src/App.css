@@ -2454,7 +2454,7 @@ body {
   30% { transform: translateY(-6px); }
 }
 
-/* Поле ввода */
+
 .chat-window__input-row {
   display: flex;
   gap: 8px;
@@ -2501,9 +2501,6 @@ body {
 .chat-window__send:hover { opacity: 0.85; }
 .chat-window__send:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ================================================
-   СТРАНИЦА ПРОФИЛЯ
-   ================================================ */
 
 .profile-page {
   min-height: calc(100vh - 60px);
@@ -2646,7 +2643,7 @@ body {
   padding: 32px 0;
 }
 
-/* Список ставок */
+
 .profile-bets {
   display: flex;
   flex-direction: column;
@@ -2717,7 +2714,7 @@ body {
   color: #4caf50;
 }
 
-/* Кнопка выхода */
+
 .profile-logout {
   padding: 13px;
   background: none;
@@ -2924,9 +2921,7 @@ body {
   color: var(--accent-gold);
 }
 
-/* ================================================
-   МОДАЛКА МАТЧА — добавь в конец App.css
-   ================================================ */
+
 .match-modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.75);
@@ -3108,4 +3103,19 @@ body {
 
 .match-modal__conflict-icon {
   font-size: 11px;
+}
+
+.coupon__item--already-bet {
+  border-left: 3px solid #e0a020;
+  background: rgba(224, 160, 32, 0.05) !important;
+}
+
+.coupon__item-conflict-msg--orange {
+  color: #e0a020 !important;
+}
+
+.coupon__conflict-banner--orange {
+  background: rgba(224, 160, 32, 0.12);
+  border-bottom: 1px solid rgba(224, 160, 32, 0.25);
+  color: #e0a020;
 }

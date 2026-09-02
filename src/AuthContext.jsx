@@ -99,6 +99,25 @@ export function AuthProvider({ children }) {
         delete next[key]
         return next
       }
+
+      const alreadyBet = betsHistory.some(bet =>
+        bet.status === 'pending' &&
+        bet.items.some(item =>
+          item.match.id === match.id && item.outcome === outcome
+        )
+      )
+      if (alreadyBet) {
+
+        next[key] = {
+          match, outcome,
+          odd: match.odds?.[outcome] ?? null,
+          conflict: false,
+          conflictWith: null,
+          alreadyBet: true,
+        }
+        return next
+      }
+
       const existingKeys = Object.keys(next).filter(k => k.startsWith(`${match.id}_`))
       let conflict = false
       let conflictWith = null
@@ -111,11 +130,10 @@ export function AuthProvider({ children }) {
         }
       }
       next[key] = {
-        match,
-        outcome,
+        match, outcome,
         odd: match.odds?.[outcome] ?? null,
-        conflict,
-        conflictWith,
+        conflict, conflictWith,
+        alreadyBet: false,
       }
       return next
     })
