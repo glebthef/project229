@@ -4,6 +4,17 @@ import { useAuth } from '../AuthContext'
 import { getUserBets } from '../api'
 import DepositModal from './DepositModal'
 
+const OUTCOME_LABELS = {
+  p1: 'П1', x: 'X', p2: 'П2',
+  total_over: 'Тотал >', total_under: 'Тотал <',
+  handicap_home: 'Фора 1', handicap_away: 'Фора 2',
+}
+
+const STATUS_LABELS = {
+  won: '✅ Выиграл', lost: '❌ Проиграл', pending: '⏳ Ожидание',
+  refund: '↩️ Возврат', cancelled: '🚫 Отменена',
+}
+
 export default function Profile() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -27,7 +38,7 @@ export default function Profile() {
   const pending = bets.filter(b => b.status === 'pending').length
   const totalWinAmount = bets
     .filter(b => b.status === 'won')
-    .reduce((acc, b) => acc + b.amount * b.odd, 0)
+    .reduce((acc, b) => acc + parseFloat(b.potential_payout), 0)
 
   return (
     <div className="profile-page">
@@ -111,28 +122,38 @@ export default function Profile() {
 
           {!loading && bets.length > 0 && (
             <div className="profile-bets">
-              {bets.map(bet => (
-                <div className="profile-bet" key={bet.id}>
-                  <div className="profile-bet__left">
-                    <span className="profile-bet__id">#{bet.id}</span>
-                    <span className="profile-bet__outcome">
-                      Исход: <strong>{{ p1: 'П1', x: 'X', p2: 'П2' }[bet.outcome]}</strong>
-                    </span>
-                    <span className="profile-bet__odd">× {bet.odd}</span>
-                  </div>
-                  <div className="profile-bet__right">
-                    <span className="profile-bet__amount">{bet.amount} ₽</span>
-                    <span className={`profile-bet__status profile-bet__status--${bet.status}`}>
-                      {{ won: '✅ Выиграл', lost: '❌ Проиграл', pending: '⏳ Ожидание' }[bet.status]}
-                    </span>
-                    {bet.status === 'won' && (
-                      <span className="profile-bet__win">
-                        +{(bet.amount * bet.odd).toFixed(2)} ₽
+              {bets.map(bet => {
+                const outcomeLabel = (bet.legs || [])
+                  .map(l => OUTCOME_LABELS[l.outcome] || l.outcome)
+                  .join(' + ')
+                return (
+                  <div className="profile-bet" key={bet.id}>
+                    <div className="profile-bet__left">
+                      <span className="profile-bet__id">#{bet.id}</span>
+                      <span className="profile-bet__outcome">
+                        Исход: <strong>{outcomeLabel}</strong>
                       </span>
-                    )}
+                      <span className="profile-bet__odd">× {bet.combined_odd}</span>
+                    </div>
+                    <div className="profile-bet__right">
+                      <span className="profile-bet__amount">{bet.amount} ₽</span>
+                      <span className={`profile-bet__status profile-bet__status--${bet.status}`}>
+                        {STATUS_LABELS[bet.status] || bet.status}
+                      </span>
+                      {bet.status === 'won' && (
+                        <span className="profile-bet__win">
+                          +{parseFloat(bet.potential_payout).toFixed(2)} ₽
+                        </span>
+                      )}
+                      {bet.status === 'refund' && (
+                        <span className="profile-bet__win">
+                          ↩ {parseFloat(bet.amount).toFixed(2)} ₽
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
