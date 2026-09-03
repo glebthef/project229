@@ -20,6 +20,13 @@ export function getOutcomeGroup(outcome) {
   return outcome
 }
 
+export function getMatchStatus(match) {
+  if (!match.fromDB) return 'upcoming'
+  if (match.status === 'finished') return 'finished'
+  if (match.starts_at && new Date(match.starts_at) <= new Date()) return 'live'
+  return 'upcoming'
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('user')

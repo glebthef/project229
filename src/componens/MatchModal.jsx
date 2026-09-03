@@ -1,109 +1,120 @@
-import { useAuth } from '../AuthContext'
-
-const OUTCOME_LABELS = { p1: 'П1', x: 'X', p2: 'П2' }
-
-function generateExtraOdds(match) {
-  const { p1, x, p2 } = match.odds
-  return [
-    {
-      group: 'Основное время',
-      outcomes: [
-        { key: 'p1', label: 'Победа П1', odd: p1 },
-        x ? { key: 'x', label: 'Ничья', odd: x } : null,
-        { key: 'p2', label: 'Победа П2', odd: p2 },
-      ].filter(Boolean),
-    },
-    p1 && p2 ? {
-      group: 'Двойной шанс',
-      outcomes: [
-        { key: 'p1', label: 'П1 или Ничья', odd: +(p1 * 0.6).toFixed(2) },
-        { key: 'x',  label: 'П1 или П2',   odd: +(Math.min(p1, p2) * 0.5).toFixed(2) },
-        { key: 'p2', label: 'П2 или Ничья', odd: +(p2 * 0.6).toFixed(2) },
-      ],
-    } : null,
-    {
-      group: 'Тотал',
-      outcomes: [
-        { key: 'p1', label: 'Тотал больше 2.5', odd: +(p2 * 1.1).toFixed(2) },
-        { key: 'p2', label: 'Тотал меньше 2.5', odd: +(p1 * 0.9).toFixed(2) },
-        { key: 'p1', label: 'Тотал больше 3.5', odd: +(p2 * 1.4).toFixed(2) },
-        { key: 'p2', label: 'Тотал меньше 3.5', odd: +(p1 * 0.7).toFixed(2) },
-      ],
-    },
-    {
-      group: 'Фора',
-      outcomes: [
-        { key: 'p1', label: `${match.home} -1`,  odd: +(p1 * 1.5).toFixed(2) },
-        { key: 'p2', label: `${match.away} +1`,  odd: +(p2 * 0.8).toFixed(2) },
-        { key: 'p1', label: `${match.home} +1`,  odd: +(p1 * 0.7).toFixed(2) },
-        { key: 'p2', label: `${match.away} -1`,  odd: +(p2 * 1.5).toFixed(2) },
-      ],
-    },
-  ].filter(Boolean)
-}
+import { useAuth, checkConflict, getOutcomeGroup, getMatchStatus } from '../AuthContext'
 
 export default function MatchModal({ match, onClose, onAuthOpen }) {
   const { user, coupon, toggleOdd } = useAuth()
+  const matchStatus = getMatchStatus(match)
+  const bettingClosed = matchStatus !== 'upcoming'
 
-  const handleOddClick = (outcome, odd) => {
-    if (!user) { onClose(); onAuthOpen(); return }
-
-    toggleOdd({ ...match, odds: { ...match.odds, [outcome]: odd } }, outcome)
+  const isActive = (key) => !!coupon[`${match.id}_${key}`]
+  const isConflicting = (key) => {
+    const existing = Object.keys(coupon)
+      .filter(k => k.startsWith(`${match.id}_`))
+      .map(k => k.replace(`${match.id}_`, ''))
+    return existing.some(e => e !== key && checkConflict(e, key))
   }
-
-  const isActive = (outcome) => !!coupon[`${match.id}_${outcome}`]
-
-  const extraOdds = generateExtraOdds(match)
+  const handleClick = (key, odd) => {
+    if (bettingClosed) return
+    if (!user) { onClose(); onAuthOpen(); return }
+    toggleOdd({ ...match, odds: { ...match.odds, [key]: odd } }, key)
+  }
+  const extra = match.extra || {}
+  const p1 = match.odds?.p1 || 2
+  const p2 = match.odds?.p2 || 2
+  const totalVal = extra.total_value ?? 2.5
+  const handicapVal = extra.handicap_value ?? 1.0
+  const isCyber = match.sport_slug === 'cybersport'
+  // Demo (non-DB) matches never accept real bets, so they keep illustrative
+  // fallback numbers; matches loaded from the DB only offer markets the
+  // backend actually priced — otherwise the bet would always be rejected
+  // server-side with "outcome is not available".
+  const hasTotal = !match.fromDB || (extra.odd_total_over != null && extra.odd_total_under != null)
+  const hasHandicap = !match.fromDB || (extra.odd_handicap_home != null && extra.odd_handicap_away != null)
+  const groups = [
+    { group: 'Основной исход', outcomes: [
+      match.odds?.p1 ? { key:'p1', label:`Победа ${match.home}`, odd: match.odds.p1 } : null,
+      match.odds?.x  ? { key:'x',  label:'Ничья', odd: match.odds.x } : null,
+      match.odds?.p2 ? { key:'p2', label:`Победа ${match.away}`, odd: match.odds.p2 } : null,
+    ].filter(Boolean) },
+    isCyber && hasTotal && hasHandicap ? { group:'Карты', outcomes: [
+      { key:'total_over',    label:'Больше 2.5 карт',          odd: extra.odd_total_over    ?? +((p2)*1.2).toFixed(2) },
+      { key:'total_under',   label:'Меньше 2.5 карт',          odd: extra.odd_total_under   ?? +((p1)*0.8).toFixed(2) },
+      { key:'handicap_home', label:`${match.home} +1.5 карты`, odd: extra.odd_handicap_home ?? +((p1)*0.75).toFixed(2) },
+      { key:'handicap_away', label:`${match.away} +1.5 карты`, odd: extra.odd_handicap_away ?? +((p2)*0.75).toFixed(2) },
+    ]} : (!isCyber && hasTotal ? { group:`Тотал (${totalVal})`, outcomes: [
+      { key:'total_over',  label:`Больше ${totalVal}`, odd: extra.odd_total_over  ?? +((p2)*1.1).toFixed(2) },
+      { key:'total_under', label:`Меньше ${totalVal}`, odd: extra.odd_total_under ?? +((p1)*0.9).toFixed(2) },
+    ]} : null),
+    !isCyber && hasHandicap ? { group:`Фора (${handicapVal})`, outcomes: [
+      { key:'handicap_home', label:`${match.home} (+${handicapVal})`, odd: extra.odd_handicap_home ?? +((p1)*1.3).toFixed(2) },
+      { key:'handicap_away', label:`${match.away} (-${handicapVal})`, odd: extra.odd_handicap_away ?? +((p2)*1.3).toFixed(2) },
+    ]} : null,
+  ].filter(Boolean)
+  const selectedCount = groups.flatMap(g => g.outcomes).filter(o => isActive(o.key)).length
 
   return (
     <div className="match-modal-overlay" onClick={onClose}>
       <div className="match-modal" onClick={e => e.stopPropagation()}>
-
-        {/* Шапка */}
         <div className="match-modal__header">
           <div className="match-modal__teams">
             <div className="match-modal__team">{match.home}</div>
             <div className="match-modal__vs">vs</div>
-            <div className="match-modal__team">{match.away}</div>
+            <div className="match-modal__team match-modal__team--right">{match.away}</div>
           </div>
           <div className="match-modal__meta">
             <span className="match-modal__league">{match.league}</span>
             <span className="match-modal__time">{match.time}</span>
+            {matchStatus === 'live' && <span className="match-modal__live">🔴 Матч уже идёт</span>}
+            {matchStatus === 'finished' && <span className="match-modal__live">Матч завершён</span>}
+            {selectedCount > 0 && <span className="match-modal__selected">✓ Выбрано: {selectedCount}</span>}
           </div>
           <button className="match-modal__close" onClick={onClose}>✕</button>
         </div>
-
-        {/* Трансляция */}
+        {!match.fromDB && <div className="match-modal__warn">⚠️ Демо-событие. Ставки работают только для событий из БД.</div>}
+        {match.fromDB && bettingClosed && (
+          <div className="match-modal__warn">
+            ⚠️ {matchStatus === 'live' ? 'Событие уже началось — ставки закрыты' : 'Событие завершено — ставки закрыты'}
+          </div>
+        )}
         <div className="match-modal__stream">
-          <div className="match-modal__stream-icon">📺</div>
-          <div className="match-modal__stream-text">
+          <span className="match-modal__stream-icon">📺</span>
+          <div className="match-modal__stream-info">
             <div className="match-modal__stream-title">Прямая трансляция</div>
             <div className="match-modal__stream-sub">Доступна для Premium-пользователей</div>
           </div>
           <button className="match-modal__stream-btn" disabled>Смотреть</button>
         </div>
-
-        {/* Расширенные исходы */}
+        <div className="match-modal__hint">💡 Выбирай исходы из разных групп — они объединятся в экспресс</div>
         <div className="match-modal__body">
-          {extraOdds.map(group => (
-            <div key={group.group} className="match-modal__group">
-              <div className="match-modal__group-title">{group.group}</div>
+          {groups.map(g => (
+            <div key={g.group} className="match-modal__group">
+              <div className="match-modal__group-title">{g.group}</div>
               <div className="match-modal__group-odds">
-                {group.outcomes.map((o, i) => (
-                  <button
-                    key={i}
-                    className={`match-modal__odd ${isActive(o.key) ? 'match-modal__odd--active' : ''}`}
-                    onClick={() => handleOddClick(o.key, o.odd)}
-                  >
-                    <span className="match-modal__odd-label">{o.label}</span>
-                    <span className="match-modal__odd-value">{o.odd}</span>
-                  </button>
-                ))}
+                {g.outcomes.map(o => {
+                  const active = isActive(o.key)
+                  const conflicting = !active && isConflicting(o.key)
+                  return (
+                    <button key={o.key}
+                      className={`match-modal__odd ${active ? 'match-modal__odd--active' : ''} ${conflicting ? 'match-modal__odd--conflict' : ''}`}
+                      onClick={() => handleClick(o.key, o.odd)}
+                      disabled={bettingClosed}
+                      title={conflicting ? `Несовместимо с выбранным ${getOutcomeGroup(o.key)}` : ''}
+                    >
+                      <span className="match-modal__odd-label">
+                        {o.label}{conflicting && <span> 🚫</span>}
+                      </span>
+                      <span className="match-modal__odd-value">{o.odd}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           ))}
         </div>
-
+        {selectedCount > 0 && (
+          <div className="match-modal__footer">
+            <button className="match-modal__add-btn" onClick={onClose}>Добавить в купон ({selectedCount}) →</button>
+          </div>
+        )}
       </div>
     </div>
   )

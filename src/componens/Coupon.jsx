@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useAuth } from '../AuthContext'
+import { useState, useEffect, useMemo } from 'react'
+import { useAuth, getMatchStatus } from '../AuthContext'
 import { createSingleBet, createExpressBet, getUserBets } from '../api'
 
 const OUTCOME_LABELS = {
@@ -18,7 +18,7 @@ const STATUS_MAP = {
   lost:    { icon: '❌', label: 'Проиграл', color: '#e05555' },
 }
 
-export default function Coupon({ onAuthOpen, onEventsUpdate }) {
+export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
   const {
     user, coupon, stake, setStake,
     removeFromCoupon, clearCoupon,
@@ -31,13 +31,24 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
   const [betLoading, setBetLoading] = useState(false)
   const [betError, setBetError] = useState('')
 
-  const items = Object.values(coupon)
+  const eventsById = useMemo(
+    () => Object.fromEntries(events.map(e => [e.id, e])),
+    [events]
+  )
+
+  const items = Object.values(coupon).map(item => {
+    const liveMatch = eventsById[item.match.id]
+    const stale = !!liveMatch && getMatchStatus(liveMatch) !== 'upcoming'
+    return { ...item, stale }
+  })
   const conflictItems = items.filter(i => i.conflict)
   const alreadyBetItems = items.filter(i => i.alreadyBet)
-  const validItems = items.filter(i => !i.conflict && !i.alreadyBet)
+  const staleItems = items.filter(i => i.stale)
+  const validItems = items.filter(i => !i.conflict && !i.alreadyBet && !i.stale)
   const hasConflicts = conflictItems.length > 0
   const hasAlreadyBet = alreadyBetItems.length > 0
-  const hasIssues = hasConflicts || hasAlreadyBet
+  const hasStale = staleItems.length > 0
+  const hasIssues = hasConflicts || hasAlreadyBet || hasStale
 
   const totalOdd = validItems.reduce((acc, i) => acc * (i.odd || 1), 1)
   const stakeNum = parseFloat(stake) || 0
@@ -78,10 +89,12 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
             user.id, user.secret,
             item.match.id, item.outcome, stakeNum,
           )
+          const leg = bet.legs?.[0]
           placedBets.push({
             betId: bet.id,
+            legId: leg?.id,
             match: item.match,
-            outcome: item.outcome,
+            outcome: leg?.outcome ?? item.outcome,
             odd: parseFloat(bet.combined_odd),
             status: bet.status,
           })
@@ -188,6 +201,7 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
     if (betLoading) return 'Размещение...'
     if (hasConflicts) return 'Устрани конфликты'
     if (hasAlreadyBet) return 'Удали повторные ставки'
+    if (hasStale) return 'Удали неактуальные события'
     if (validItems.length === 0) return 'Добавь события'
     if (betType === 'single' && validItems.length > 1)
       return `Заключить ${validItems.length} ординара`
@@ -257,6 +271,11 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
               🔄 На некоторые исходы ставка уже сделана
             </div>
           )}
+          {hasStale && (
+            <div className="coupon__conflict-banner coupon__conflict-banner--orange">
+              ⏱️ Событие уже началось или завершилось — удали его из купона
+            </div>
+          )}
 
    
           {items.length === 0 && (
@@ -279,10 +298,10 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
     
           {items.length > 0 && (
             <div className="coupon__items">
-              {items.map(({ match, outcome, odd, conflict, conflictWith, alreadyBet }) => (
+              {items.map(({ match, outcome, odd, conflict, conflictWith, alreadyBet, stale }) => (
                 <div
                   key={`${match.id}_${outcome}`}
-                  className={`coupon__item ${conflict ? 'coupon__item--conflict' : ''} ${alreadyBet ? 'coupon__item--already-bet' : ''}`}
+                  className={`coupon__item ${conflict ? 'coupon__item--conflict' : ''} ${alreadyBet ? 'coupon__item--already-bet' : ''} ${stale ? 'coupon__item--already-bet' : ''}`}
                 >
                   <div className="coupon__item-top">
                     <div className="coupon__item-outcome-row">
@@ -290,7 +309,7 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
                       <span className="coupon__item-outcome-label">
                         Исход: <strong>{OUTCOME_LABELS[outcome] || outcome}</strong>
                       </span>
-                      <span className={`coupon__item-odd ${conflict || alreadyBet ? 'coupon__item-odd--conflict' : ''}`}>
+                      <span className={`coupon__item-odd ${conflict || alreadyBet || stale ? 'coupon__item-odd--conflict' : ''}`}>
                         {odd}
                       </span>
                     </div>
@@ -306,6 +325,11 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
                   {alreadyBet && (
                     <div className="coupon__item-conflict-msg coupon__item-conflict-msg--orange">
                       🔄 Ставка уже сделана
+                    </div>
+                  )}
+                  {stale && (
+                    <div className="coupon__item-conflict-msg coupon__item-conflict-msg--orange">
+                      ⏱️ Событие уже началось или завершилось
                     </div>
                   )}
                 </div>
