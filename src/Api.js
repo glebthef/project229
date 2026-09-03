@@ -1,21 +1,16 @@
-
 const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
 
 async function request(path, options = {}) {
   const { headers: extraHeaders, ...rest } = options
   const res = await fetch(`${BASE_URL}${path}`, {
     ...rest,
-    headers: {
-      "Content-Type": "application/json",
-      ...(extraHeaders || {}),
-    },
+    headers: { "Content-Type": "application/json", ...(extraHeaders || {}) },
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Ошибка сервера" }))
     if (typeof err.detail === 'string') throw new Error(err.detail)
     if (Array.isArray(err.detail)) {
-      const msg = err.detail.map(e => `${e.loc?.slice(-1)[0]}: ${e.msg}`).join('; ')
-      throw new Error(msg)
+      throw new Error(err.detail.map(e => `${e.loc?.slice(-1)[0]}: ${e.msg}`).join('; '))
     }
     throw new Error("Ошибка сервера")
   }
@@ -43,14 +38,29 @@ export const deleteSession = (secret) =>
 export const getEvents = (sportSlug = null) =>
   request(sportSlug ? `/events?sport_slug=${sportSlug}` : "/events")
 
-export const createBet = (userId, secret, eventId, outcome, amount) =>
-  request(`/users/${userId}/bets`, {
+
+export const createSingleBet = (userId, secret, eventId, outcome, amount) =>
+  request(`/users/${userId}/bets/single`, {
     method: "POST",
     headers: { "session-secret": secret },
     body: JSON.stringify({
       event_id: parseInt(eventId),
       outcome: String(outcome),
       amount: parseFloat(amount),
+    }),
+  })
+
+
+export const createExpressBet = (userId, secret, legs, amount) =>
+  request(`/users/${userId}/bets/express`, {
+    method: "POST",
+    headers: { "session-secret": secret },
+    body: JSON.stringify({
+      amount: parseFloat(amount),
+      legs: legs.map(l => ({
+        event_id: parseInt(l.event_id),
+        outcome: String(l.outcome),
+      })),
     }),
   })
 

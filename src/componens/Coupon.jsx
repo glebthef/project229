@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../AuthContext'
-import { createBet, getUserBets } from '../api'
+import { createSingleBet, createExpressBet, getUserBets } from '../api'
 
 const OUTCOME_LABELS = {
   p1: 'П1', x: 'X', p2: 'П2',
@@ -32,16 +32,16 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
   const [betError, setBetError] = useState('')
 
   const items = Object.values(coupon)
-
   const conflictItems = items.filter(i => i.conflict)
   const alreadyBetItems = items.filter(i => i.alreadyBet)
   const validItems = items.filter(i => !i.conflict && !i.alreadyBet)
   const hasConflicts = conflictItems.length > 0
   const hasAlreadyBet = alreadyBetItems.length > 0
+  const hasIssues = hasConflicts || hasAlreadyBet
 
   const totalOdd = validItems.reduce((acc, i) => acc * (i.odd || 1), 1)
   const stakeNum = parseFloat(stake) || 0
-  const payout = stakeNum > 0 && !hasConflicts && !hasAlreadyBet ? (stakeNum * totalOdd).toFixed(2) : null
+  const payout = stakeNum > 0 && !hasIssues ? (stakeNum * totalOdd).toFixed(2) : null
 
   const pendingBets = betsHistory.filter(b => b.status === 'pending')
   const settledBets = betsHistory.filter(b => b.status !== 'pending')
@@ -54,14 +54,14 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
 
   const handleBet = async () => {
     if (!user || validItems.length === 0 || stakeNum <= 0) return
-    if (hasConflicts) {
-      setBetError('Удали несовместимые исходы перед ставкой')
+    if (hasIssues) {
+      setBetError('Устрани проблемы в купоне перед ставкой')
       return
     }
 
     const notFromDB = validItems.filter(i => !i.match.fromDB)
     if (notFromDB.length > 0) {
-      setBetError('Некоторые события недоступны — только события из БД')
+      setBetError('Ставки доступны только на события из БД')
       return
     }
 
@@ -69,35 +69,77 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
     setBetError('')
 
     try {
-      const placedBets = []
-      for (const item of validItems) {
-        const bet = await createBet(
-          user.id, user.secret,
-          item.match.id, item.outcome, stakeNum,
-        )
-        placedBets.push({ ...item, betId: bet.id, status: bet.status })
+      let newBetRecord
+
+      if (betType === 'single') {
+        const placedBets = []
+        for (const item of validItems) {
+          const bet = await createSingleBet(
+            user.id, user.secret,
+            item.match.id, item.outcome, stakeNum,
+          )
+          placedBets.push({
+            betId: bet.id,
+            match: item.match,
+            outcome: item.outcome,
+            odd: parseFloat(bet.combined_odd),
+            status: bet.status,
+          })
+        }
+        const now = new Date().toLocaleString('ru-RU', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+        })
+        const newBets = placedBets.map(b => ({
+          id: Date.now() + Math.random(),
+          backendId: b.betId,
+          type: 'single',
+          items: [b],
+          stake: stakeNum,
+          totalOdd: b.odd,
+          payout: parseFloat((stakeNum * b.odd).toFixed(2)),
+          date: now,
+          status: 'pending',
+        }))
+        setBetsHistory(prev => [...newBets, ...prev])
+
+      } else {
+      
+        const legs = validItems.map(item => ({
+          event_id: item.match.id,
+          outcome: item.outcome,
+        }))
+
+        const bet = await createExpressBet(user.id, user.secret, legs, stakeNum)
+
+        newBetRecord = {
+          id: Date.now(),
+          backendId: bet.id,
+          type: 'express',
+          items: bet.legs.map((leg, i) => ({
+            betId: bet.id,
+            legId: leg.id,
+            match: validItems[i]?.match,
+            outcome: leg.outcome,
+            odd: parseFloat(leg.odd),
+            status: leg.status,
+          })),
+          stake: stakeNum,
+          totalOdd: parseFloat(bet.combined_odd),
+          payout: parseFloat(bet.potential_payout),
+          date: new Date().toLocaleString('ru-RU', {
+            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+          }),
+          status: 'pending',
+        }
+        setBetsHistory(prev => [newBetRecord, ...prev])
       }
 
-      const newBet = {
-        id: Date.now(),
-        type: betType,
-        items: placedBets,
-        stake: stakeNum,
-        totalOdd: parseFloat(totalOdd.toFixed(2)),
-        payout: parseFloat((stakeNum * totalOdd).toFixed(2)),
-        date: new Date().toLocaleString('ru-RU', {
-          day: '2-digit', month: '2-digit',
-          hour: '2-digit', minute: '2-digit',
-        }),
-        status: 'pending',
-      }
-
-      setBetsHistory(prev => [newBet, ...prev])
       clearCoupon()
       setStake('')
       setTab('history')
       setHistoryTab('pending')
       await refreshBalance()
+
     } catch (e) {
       console.error('Bet error:', e)
       setBetError(e.message || 'Ошибка при размещении ставки')
@@ -112,19 +154,26 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
     try {
       const backendBets = await getUserBets(user.id, user.secret)
       let hasChanges = false
+
       const updated = betsHistory.map(histBet => {
+        const backendBet = backendBets.find(b => b.id === histBet.backendId)
+        if (!backendBet) return histBet
+
+
         const newItems = histBet.items.map(item => {
-          const b = backendBets.find(bb => bb.id === item.betId)
-          if (b && b.status !== item.status) { hasChanges = true; return { ...item, status: b.status } }
+          const leg = backendBet.legs?.find(l => l.id === item.legId)
+          if (leg && leg.status !== item.status) {
+            hasChanges = true
+            return { ...item, status: leg.status }
+          }
           return item
         })
-        const statuses = newItems.map(i => i.status)
-        let newStatus = histBet.status
-        if (statuses.every(s => s === 'won')) newStatus = 'won'
-        else if (statuses.every(s => s !== 'pending')) newStatus = 'lost'
-        if (newStatus !== histBet.status) hasChanges = true
-        return { ...histBet, items: newItems, status: newStatus }
+
+        if (backendBet.status !== histBet.status) hasChanges = true
+
+        return { ...histBet, items: newItems, status: backendBet.status }
       })
+
       if (hasChanges) {
         setBetsHistory(updated)
         await refreshBalance()
@@ -135,9 +184,20 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
     }
   }
 
+  const getBetStatusLabel = () => {
+    if (betLoading) return 'Размещение...'
+    if (hasConflicts) return 'Устрани конфликты'
+    if (hasAlreadyBet) return 'Удали повторные ставки'
+    if (validItems.length === 0) return 'Добавь события'
+    if (betType === 'single' && validItems.length > 1)
+      return `Заключить ${validItems.length} ординара`
+    return 'Заключить'
+  }
+
   return (
     <div className="coupon-sidebar">
       <div className="coupon">
+
 
         <div className="coupon__header">
           <div className="coupon__header-tabs">
@@ -147,7 +207,7 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
             >
               Купон
               {items.length > 0 && (
-                <span className={`coupon__badge ${hasConflicts ? 'coupon__badge--red' : ''}`}>
+                <span className={`coupon__badge ${hasIssues ? 'coupon__badge--red' : ''}`}>
                   {items.length}
                 </span>
               )}
@@ -164,8 +224,8 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
           </div>
         </div>
 
-   
         {tab === 'coupon' && (<>
+
           {items.length > 0 && (
             <div className="coupon__type-tabs">
               <button
@@ -179,18 +239,26 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
             </div>
           )}
 
+     
+          {items.length > 1 && betType === 'single' && !hasIssues && (
+            <div className="coupon__hint">
+              💡 Ординар: {validItems.length} ставки по {stakeNum || '...'} ₽ каждая
+            </div>
+          )}
+
+ 
           {hasConflicts && (
             <div className="coupon__conflict-banner">
-              ⚠️ Некоторые пари несовместимы — удали выделенные красным
+              ⚠️ Несовместимые пари — удали выделенные красным
             </div>
           )}
-
           {hasAlreadyBet && (
             <div className="coupon__conflict-banner coupon__conflict-banner--orange">
-              🔄 На некоторые исходы ставка уже сделана — удали их
+              🔄 На некоторые исходы ставка уже сделана
             </div>
           )}
 
+   
           {items.length === 0 && (
             <div className="coupon__empty">
               <div className="coupon__empty-icon">🎫</div>
@@ -208,12 +276,13 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
             </div>
           )}
 
+    
           {items.length > 0 && (
             <div className="coupon__items">
               {items.map(({ match, outcome, odd, conflict, conflictWith, alreadyBet }) => (
                 <div
-                  className={`coupon__item ${conflict ? 'coupon__item--conflict' : ''} ${alreadyBet ? 'coupon__item--already-bet' : ''}`}
                   key={`${match.id}_${outcome}`}
+                  className={`coupon__item ${conflict ? 'coupon__item--conflict' : ''} ${alreadyBet ? 'coupon__item--already-bet' : ''}`}
                 >
                   <div className="coupon__item-top">
                     <div className="coupon__item-outcome-row">
@@ -225,20 +294,18 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
                         {odd}
                       </span>
                     </div>
-                    <button
-                      className="coupon__item-remove"
-                      onClick={() => removeFromCoupon(`${match.id}_${outcome}`)}
-                    >✕</button>
+                    <button className="coupon__item-remove"
+                      onClick={() => removeFromCoupon(`${match.id}_${outcome}`)}>✕</button>
                   </div>
                   <div className="coupon__item-match">{match.home} — {match.away}</div>
                   {conflict && (
                     <div className="coupon__item-conflict-msg">
-                      ⚠️ Несовместимо с исходом «{OUTCOME_LABELS[conflictWith] || conflictWith}»
+                      ⚠️ Несовместимо с «{OUTCOME_LABELS[conflictWith] || conflictWith}»
                     </div>
                   )}
                   {alreadyBet && (
                     <div className="coupon__item-conflict-msg coupon__item-conflict-msg--orange">
-                      🔄 Ставка на этот исход уже сделана
+                      🔄 Ставка уже сделана
                     </div>
                   )}
                 </div>
@@ -248,7 +315,7 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
                 <button className="coupon__delete-all" onClick={clearCoupon}>
                   🗑 Удалить все...
                 </button>
-                {!hasConflicts && (
+                {!hasIssues && betType === 'express' && (
                   <span className="coupon__total-odd-small">{totalOdd.toFixed(2)}</span>
                 )}
               </div>
@@ -257,10 +324,18 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
 
           {items.length > 0 && (
             <div className="coupon__footer">
-              {payout && (
+              {payout && betType === 'express' && (
                 <div className="coupon__payout">
                   <span>Выигрыш</span>
                   <span className="coupon__payout-value">{payout} ₽</span>
+                </div>
+              )}
+              {payout && betType === 'single' && validItems.length > 0 && (
+                <div className="coupon__payout">
+                  <span>Выигрыш за каждую</span>
+                  <span className="coupon__payout-value">
+                    {validItems.map(i => (stakeNum * (i.odd || 1)).toFixed(2)).join(' / ')} ₽
+                  </span>
                 </div>
               )}
 
@@ -271,25 +346,23 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
                 value={stake}
                 onChange={e => { setStake(e.target.value); setBetError('') }}
                 min="0"
-                disabled={hasConflicts}
+                disabled={hasIssues}
               />
 
               {betError && <div className="auth-modal__error">{betError}</div>}
 
               <button
-                className={`coupon__bet-btn coupon__bet-btn--full ${hasConflicts || hasAlreadyBet ? 'coupon__bet-btn--disabled' : ''}`}
+                className={`coupon__bet-btn coupon__bet-btn--full ${hasIssues ? 'coupon__bet-btn--disabled' : ''}`}
                 onClick={handleBet}
-                disabled={stakeNum <= 0 || betLoading || hasConflicts || hasAlreadyBet}
+                disabled={stakeNum <= 0 || betLoading || hasIssues}
               >
-                {betLoading ? 'Размещение...' : hasConflicts ? 'Устрани конфликты' : hasAlreadyBet ? 'Удали повторные ставки' : 'Заключить'}
+                {getBetStatusLabel()}
               </button>
 
               <div className="coupon__quick-amounts">
                 {QUICK_AMOUNTS.map(a => (
-                  <button
-                    key={a}
-                    className="coupon__quick-btn"
-                    disabled={hasConflicts}
+                  <button key={a} className="coupon__quick-btn"
+                    disabled={hasIssues}
                     onClick={() => { setStake(String(a)); setBetError('') }}
                   >{a} ₽</button>
                 ))}
@@ -298,7 +371,7 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
           )}
         </>)}
 
-  
+ 
         {tab === 'history' && (<>
           <div className="coupon__type-tabs">
             <button
@@ -330,14 +403,19 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
                         <div key={i}>
                           <div className="coupon__history-event">
                             <span>Исход: <strong>{OUTCOME_LABELS[item.outcome] || item.outcome}</strong></span>
-                            <span className="coupon__item-odd">{item.odd}</span>
+                            <span className={`coupon__item-odd ${item.status === 'won' ? 'coupon__item-odd--won' : item.status === 'lost' ? 'coupon__item-odd--lost' : ''}`}>
+                              {item.status !== 'pending' && (STATUS_MAP[item.status]?.icon + ' ')}
+                              {item.odd}
+                            </span>
                           </div>
-                          <div className="coupon__history-match">{item.match.home} — {item.match.away}</div>
+                          <div className="coupon__history-match">
+                            {item.match?.home} — {item.match?.away}
+                          </div>
                         </div>
                       ))}
                       <div className="coupon__history-footer">
                         <span>Ставка: <strong>{bet.stake} ₽</strong></span>
-                        <span>Возможный выигрыш: <strong className="coupon__payout-value">{bet.payout} ₽</strong></span>
+                        <span>Выигрыш: <strong className="coupon__payout-value">{bet.payout} ₽</strong></span>
                       </div>
                     </div>
                   ))}
@@ -367,7 +445,9 @@ export default function Coupon({ onAuthOpen, onEventsUpdate }) {
                               <span>Исход: <strong>{OUTCOME_LABELS[item.outcome] || item.outcome}</strong></span>
                               <span className="coupon__item-odd">{item.odd}</span>
                             </div>
-                            <div className="coupon__history-match">{item.match.home} — {item.match.away}</div>
+                            <div className="coupon__history-match">
+                              {item.match?.home} — {item.match?.away}
+                            </div>
                           </div>
                         ))}
                         <div className="coupon__history-footer">
