@@ -34,13 +34,16 @@ export default function MainLayout({ onAuthOpen, initialSport = 'football' }) {
   const [dbEvents, setDbEvents] = useState([])
   const [loading, setLoading] = useState(false)
 
+  // Fetch all sports' events in one go (not just the active tab) so the
+  // sidebar can show real per-sport counts instead of the hardcoded
+  // placeholder numbers from data.js.
   const loadEvents = useCallback(() => {
     setLoading(true)
-    getEvents(activeId)
+    getEvents()
       .then(data => setDbEvents(data.map(normalizeEvent)))
       .catch(() => setDbEvents([]))
       .finally(() => setLoading(false))
-  }, [activeId])
+  }, [])
 
   useEffect(() => { loadEvents() }, [loadEvents])
   useEffect(() => {
@@ -49,13 +52,19 @@ export default function MainLayout({ onAuthOpen, initialSport = 'football' }) {
   }, [loadEvents])
 
   const currentSport = sports.find(s => s.id === activeId)
-  const activeDbEvents = dbEvents.filter(e => e.is_active)
+  const activeDbEvents = dbEvents.filter(e => e.is_active && e.sport_slug === activeId)
   const currentEvents = activeDbEvents.length > 0 ? activeDbEvents : (localEvents[activeId] || [])
+
+  const eventCounts = dbEvents.reduce((acc, e) => {
+    if (e.is_active) acc[e.sport_slug] = (acc[e.sport_slug] || 0) + 1
+    return acc
+  }, {})
+  const sportsWithCounts = sports.map(s => ({ ...s, count: eventCounts[s.id] || 0 }))
 
   return (
     <div className="full-page-layout">
       <div className="main-layout">
-        <LeftPanel items={sports} activeId={activeId} onSelect={setActiveId} />
+        <LeftPanel items={sportsWithCounts} activeId={activeId} onSelect={setActiveId} />
         <RightPanel
           title={currentSport?.name || 'Выберите спорт'}
           data={currentEvents}

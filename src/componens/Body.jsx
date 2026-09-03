@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth, getMatchStatus } from '../AuthContext'
 import Coupon from './Coupon'
-import MatchModal from './MatchModal'
+import MatchModal, { getExtraMarketsCount } from './MatchModal'
 import { sports, events as localEvents } from '../data.js'
 import { getEvents } from '../api'
 import { useChat } from '../ChatContext.jsx'
@@ -123,7 +123,7 @@ export default function Body({ onAuthOpen }) {
                       >
                         <span className="match-card__odd-label">Ещё</span>
                         <span className="match-card__odd-value">
-                          {selectedInMatch(match.id) > 0 ? `✓ ${selectedInMatch(match.id)}` : '+ 12'}
+                          {selectedInMatch(match.id) > 0 ? `✓ ${selectedInMatch(match.id)}` : `+ ${getExtraMarketsCount(match)}`}
                         </span>
                       </button>
                     </div>

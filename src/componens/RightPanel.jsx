@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useAuth, getMatchStatus } from '../AuthContext'
-import MatchModal from './MatchModal'
+import MatchModal, { getExtraMarketsCount } from './MatchModal'
 
 export default function RightPanel({ title, data, loading, onAuthOpen }) {
   const { user, coupon, toggleOdd } = useAuth()
@@ -105,7 +105,7 @@ export default function RightPanel({ title, data, loading, onAuthOpen }) {
                     >
                       <span className="match-card__odd-label">Ещё</span>
                       <span className="match-card__odd-value">
-                        {selectedInMatch(m.id) > 0 ? `✓ ${selectedInMatch(m.id)}` : '+ 12'}
+                        {selectedInMatch(m.id) > 0 ? `✓ ${selectedInMatch(m.id)}` : `+ ${getExtraMarketsCount(m)}`}
                       </span>
                     </button>
                   </div>

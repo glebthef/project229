@@ -1,5 +1,17 @@
 import { useAuth, checkConflict, getOutcomeGroup, getMatchStatus } from '../AuthContext'
 
+// How many outcomes the "Ещё" button on a match card actually reveals,
+// beyond the p1/x/p2 already shown there — mirrors the hasTotal/hasHandicap
+// gating below so the number on the card matches what the modal opens to.
+export function getExtraMarketsCount(match) {
+  const extra = match.extra || {}
+  const isCyber = match.sport_slug === 'cybersport'
+  const hasTotal = !match.fromDB || (extra.odd_total_over != null && extra.odd_total_under != null)
+  const hasHandicap = !match.fromDB || (extra.odd_handicap_home != null && extra.odd_handicap_away != null)
+  if (isCyber) return hasTotal && hasHandicap ? 4 : 0
+  return (hasTotal ? 2 : 0) + (hasHandicap ? 2 : 0)
+}
+
 export default function MatchModal({ match, onClose, onAuthOpen }) {
   const { user, coupon, toggleOdd } = useAuth()
   const matchStatus = getMatchStatus(match)
