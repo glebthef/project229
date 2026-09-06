@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { sports, events as localEvents } from '../data.js'
-import { getEvents } from '../api'
+import { events as localEvents } from '../data.js'
+import { getEvents, getSports } from '../api'
 import LeftPanel from './LeftPanel'
 import RightPanel from './RightPanel'
 import Coupon from './Coupon'
@@ -33,10 +33,9 @@ export default function MainLayout({ onAuthOpen, initialSport = 'football' }) {
   const [activeId, setActiveId] = useState(initialSport)
   const [dbEvents, setDbEvents] = useState([])
   const [loading, setLoading] = useState(false)
+  const [sportList, setSportList] = useState([])
 
-  // Fetch all sports' events in one go (not just the active tab) so the
-  // sidebar can show real per-sport counts instead of the hardcoded
-  // placeholder numbers from data.js.
+
   const loadEvents = useCallback(() => {
     setLoading(true)
     getEvents()
@@ -50,8 +49,11 @@ export default function MainLayout({ onAuthOpen, initialSport = 'football' }) {
     const interval = setInterval(loadEvents, 30000)
     return () => clearInterval(interval)
   }, [loadEvents])
+  useEffect(() => {
+    getSports().then(setSportList).catch(()=>setSportList([]))
+  }, [])
 
-  const currentSport = sports.find(s => s.id === activeId)
+  const currentSport = sportList.find(s => s.slug === activeId)
   const activeDbEvents = dbEvents.filter(e => e.is_active && e.sport_slug === activeId)
   const currentEvents = activeDbEvents.length > 0 ? activeDbEvents : (localEvents[activeId] || [])
 
@@ -59,7 +61,7 @@ export default function MainLayout({ onAuthOpen, initialSport = 'football' }) {
     if (e.is_active) acc[e.sport_slug] = (acc[e.sport_slug] || 0) + 1
     return acc
   }, {})
-  const sportsWithCounts = sports.map(s => ({ ...s, count: eventCounts[s.id] || 0 }))
+  const sportsWithCounts = sportList.map(s => ({ ...s, count: eventCounts[s.slug] || 0 }))
 
   return (
     <div className="full-page-layout">
@@ -67,6 +69,7 @@ export default function MainLayout({ onAuthOpen, initialSport = 'football' }) {
         <LeftPanel items={sportsWithCounts} activeId={activeId} onSelect={setActiveId} />
         <RightPanel
           title={currentSport?.name || 'Выберите спорт'}
+          icon={currentSport?.icon}
           data={currentEvents}
           loading={loading}
           onAuthOpen={onAuthOpen}

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useAuth, getMatchStatus } from '../AuthContext'
 import MatchModal, { getExtraMarketsCount } from './MatchModal'
 
-export default function RightPanel({ title, data, loading, onAuthOpen }) {
+export default function RightPanel({ title, icon, data, loading, onAuthOpen }) {
   const { user, coupon, toggleOdd } = useAuth()
   const [selectedMatch, setSelectedMatch] = useState(null)
   const [search, setSearch] = useState('')
@@ -41,7 +41,7 @@ export default function RightPanel({ title, data, loading, onAuthOpen }) {
   return (
     <main className="right-panel">
       <div className="sport-header">
-        <h1 className="sport-title">{title}</h1>
+        <h1 className="sport-title">{icon ? `${icon} ${title}` : title}</h1>
       </div>
 
       <div className="events-toolbar">

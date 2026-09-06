@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom'
 import { useAuth, getMatchStatus } from '../AuthContext'
 import Coupon from './Coupon'
 import MatchModal, { getExtraMarketsCount } from './MatchModal'
-import { sports, events as localEvents } from '../data.js'
-import { getEvents } from '../api'
+import {events as localEvents, sports } from '../data.js'
+import { getEvents, getSports } from '../api'
 import { useChat } from '../ChatContext.jsx'
 
 const OUTCOME_LABELS = { p1: 'П1', x: 'X', p2: 'П2' }
-const NAV_SPORTS = sports.slice(0, 7)
 
 function normalizeEvent(e) {
   return {
@@ -38,6 +37,7 @@ export default function Body({ onAuthOpen }) {
   const [dbEvents, setDbEvents] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedMatch, setSelectedMatch] = useState(null)
+  const [sportList, setSportList] = useState([])
 
   const loadEvents = useCallback(() => {
     setLoading(true)
@@ -52,7 +52,9 @@ export default function Body({ onAuthOpen }) {
     const interval = setInterval(loadEvents, 30000)
     return () => clearInterval(interval)
   }, [loadEvents])
-
+  useEffect(() =>{
+    getSports().then(setSportList).catch(() => setSportList([]))
+   }, [])
   const currentEvents = dbEvents.length > 0
     ? dbEvents.filter(e => e.is_active)
     : (localEvents[activeSport] || []).map(normalizeLocal)
@@ -78,10 +80,10 @@ export default function Body({ onAuthOpen }) {
         <div className="left-side">
           <span className="label">События</span>
           <div className="sports-nav">
-            {NAV_SPORTS.map(sport => (
-              <button key={sport.id}
-                className={`sport-item ${activeSport === sport.id ? 'active' : ''}`}
-                onClick={() => setActiveSport(sport.id)}
+            {sportList.slice(0,7).map(sport => (
+              <button key={sport.slug}
+                className={`sport-item ${activeSport === sport.slug ? 'active' : ''}`}
+                onClick={() => setActiveSport(sport.slug)}
               >{sport.icon} {sport.name}</button>
             ))}
             <Link to="/all-sports" className="show-all-btn">Показать все →</Link>

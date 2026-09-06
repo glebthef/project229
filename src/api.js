@@ -66,3 +66,6 @@ export const createExpressBet = (userId, secret, legs, amount) =>
 
 export const getUserBets = (userId, secret) =>
   request(`/users/${userId}/bets`, { headers: { "session-secret": secret } })
+
+export const getSports = ()=>
+  request("/sports")

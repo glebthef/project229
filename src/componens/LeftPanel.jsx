@@ -7,9 +7,9 @@ export default function LeftPanel({ items, activeId, onSelect }) {
       <div className="sports-list">
         {items.map(sport => (
           <button
-            key={sport.id}
-            className={`sport-item ${activeId === sport.id ? 'active' : ''}`}
-            onClick={() => onSelect(sport.id)}
+            key={sport.slug}
+            className={`sport-item ${activeId === sport.slug ? 'active' : ''}`}
+            onClick={() => onSelect(sport.slug)}
           >
             <span className="icon">{sport.icon}</span>
             <span className="name">{sport.name}</span>
