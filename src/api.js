@@ -8,6 +8,16 @@ async function request(path, options = {}) {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Ошибка сервера" }))
+    if (err.detail === "Account banned") {
+      // Backend rejects this on every authenticated request once a user is
+      // banned, even with an already-issued session-secret — force them out
+      // client-side too, instead of leaving a "still logged in" UI that just
+      // silently fails on every action.
+      localStorage.removeItem('user')
+      localStorage.removeItem('betsHistory')
+      window.location.href = '/'
+      throw new Error('Аккаунт заблокирован')
+    }
     if (typeof err.detail === 'string') throw new Error(err.detail)
     if (Array.isArray(err.detail)) {
       throw new Error(err.detail.map(e => `${e.loc?.slice(-1)[0]}: ${e.msg}`).join('; '))
@@ -69,3 +79,77 @@ export const getUserBets = (userId, secret) =>
 
 export const getSports = ()=>
   request("/sports")
+
+export const createEventAdmin = (secret, data)=>
+  request("/events", {method: "POST",
+                      headers: {"session-secret": secret},
+                      body: JSON.stringify(data)
+
+
+  })
+
+  export const finishEvent = (secret, eventId, homeScore, awayScore) =>
+    request(`/events/${eventId}/finish`,
+      {
+          method: "POST",
+          headers: {"session-secret":secret},
+          body: JSON.stringify({
+            home_score: homeScore,
+            away_score: awayScore
+          })
+
+      }
+    )
+
+    export const createSportAdmin = (secret, data) =>
+      request("/sports", {method: "POST",
+                          headers:{"session-secret": secret},
+                          body: JSON.stringify(data)
+      })
+    export const getAllUsers = (secret) => request("/users", { headers: { "session-secret": secret } })
+
+export const updateEventAdmin = (secret, eventId, data) =>
+  request(`/events/${eventId}`, {
+    method: "PUT",
+    headers: { "session-secret": secret },
+    body: JSON.stringify(data),
+  })
+
+export const deleteEventAdmin = (secret, eventId) =>
+  request(`/events/${eventId}`, {
+    method: "DELETE",
+    headers: { "session-secret": secret },
+  })
+
+export const deleteSportAdmin = (secret, sportId) =>
+  request(`/sports/${sportId}`, {
+    method: "DELETE",
+    headers: { "session-secret": secret },
+  })
+
+export const banUser = (secret, userId, banned) =>
+  request(`/users/${userId}/ban`, {
+    method: "PATCH",
+    headers: { "session-secret": secret },
+    body: JSON.stringify({ banned }),
+  })
+
+export const updateLiveScore = (secret, eventId, homeScore, awayScore) =>
+  request(`/events/${eventId}/score`, {
+    method: "PATCH",
+    headers: { "session-secret": secret },
+    body: JSON.stringify({ home_score: homeScore, away_score: awayScore }),
+  })
+
+export const getChatMessages = (userId, secret) =>
+  request(`/users/${userId}/chat`, { headers: { "session-secret": secret } })
+
+export const sendChatMessage = (userId, secret, text) =>
+  request(`/users/${userId}/chat`, {
+    method: "POST",
+    headers: { "session-secret": secret },
+    body: JSON.stringify({ text }),
+  })
+
+export const getAllChatsAdmin = (secret) =>
+  request("/chats", { headers: { "session-secret": secret } })

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { events as localEvents } from '../data.js'
+
 import { getEvents, getSports } from '../api'
 import LeftPanel from './LeftPanel'
 import RightPanel from './RightPanel'
@@ -25,7 +25,9 @@ function normalizeEvent(e) {
       odd_total_under: e.odd_total_under, handicap_value: e.handicap_value,
       odd_handicap_home: e.odd_handicap_home, odd_handicap_away: e.odd_handicap_away,
     },
-    status: e.status, is_active: e.is_active, fromDB: true,
+    status: e.status, is_active: e.is_active,
+    home_score: e.home_score, away_score: e.away_score,
+    fromDB: true,
   }
 }
 
@@ -55,8 +57,7 @@ export default function MainLayout({ onAuthOpen, initialSport = 'football' }) {
 
   const currentSport = sportList.find(s => s.slug === activeId)
   const activeDbEvents = dbEvents.filter(e => e.is_active && e.sport_slug === activeId)
-  const currentEvents = activeDbEvents.length > 0 ? activeDbEvents : (localEvents[activeId] || [])
-
+  const currentEvents =  activeDbEvents
   const eventCounts = dbEvents.reduce((acc, e) => {
     if (e.is_active) acc[e.sport_slug] = (acc[e.sport_slug] || 0) + 1
     return acc

@@ -475,15 +475,88 @@ body {
 .footer {
   background-color: var(--bg-footer);
   border-top: 1px solid var(--border-footer);
-  padding: 20px 0;
+  padding-top: 30px;
   margin-top: 40px;
   transition: background-color 0.3s, border-color 0.3s;
 }
 
+.footer-top {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-footer);
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.footer-col--about {
+  flex: 1 1 260px;
+  max-width: 320px;
+}
+
+.footer-logo {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  color: var(--accent-gold);
+  font-size: 18px;
+}
+
+.footer-about-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-family: 'Inter', sans-serif;
+}
+
+.footer-col-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 2px;
+}
+
+.footer-col a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  transition: color 0.2s;
+}
+
+.footer-col a:hover {
+  color: var(--text-main);
+}
+
+.footer-payments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.footer-payments span {
+  font-size: 12px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-footer);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: 'Inter', sans-serif;
+}
+
+
 .footer-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -497,21 +570,18 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
-.footer-links {
+.footer-badges {
   display: flex;
-  gap: 20px;
+  gap: 10px;
 }
 
-.footer-links a {
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 13px;
+.footer-badge {
+  font-size: 12px;
   font-family: 'Inter', sans-serif;
-  transition: color 0.2s;
-}
-
-.footer-links a:hover {
-  color: var(--text-main);
+  color: var(--text-muted);
+  border: 1px solid var(--border-footer);
+  border-radius: 6px;
+  padding: 3px 8px;
 }
 
 /* ===== ПОЛНОЭКРАННАЯ СТРАНИЦА (/all-sports) ===== */
@@ -1790,6 +1860,30 @@ body {
   margin-top: 2px;
 }
 
+.match-card__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #e05555;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.match-card__score {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 9px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
 .match-card__odds {
   display: flex;
   gap: 6px;
@@ -2430,30 +2524,13 @@ body {
   padding: 0 4px;
 }
 
-/* Индикатор набора */
-.chat-typing {
-  display: flex;
-  gap: 4px;
-  padding: 10px 14px;
-  align-items: center;
+.chat-window__error {
+  font-size: 12px;
+  color: #e05555;
+  text-align: center;
+  padding: 0 12px 8px;
+  flex-shrink: 0;
 }
-
-.chat-typing span {
-  width: 7px;
-  height: 7px;
-  background: var(--text-muted);
-  border-radius: 50%;
-  animation: typingBounce 1.2s infinite;
-}
-
-.chat-typing span:nth-child(2) { animation-delay: 0.2s; }
-.chat-typing span:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes typingBounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-6px); }
-}
-
 
 .chat-window__input-row {
   display: flex;
@@ -3131,3 +3208,245 @@ body {
 
 .coupon__item-odd--won  { color: #4caf50 !important; }
 .coupon__item-odd--lost { color: #e05555 !important; }
+
+/* ===== Admin ===== */
+.admin-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  color: var(--text-main);
+}
+
+.admin-page h1 {
+  font-size: 28px;
+  margin-bottom: 24px;
+}
+
+.admin-page h2 {
+  font-size: 18px;
+  margin: 32px 0 16px;
+}
+
+.admin-page__form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.admin-page__input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.admin-page__input:focus { border-color: var(--accent-gold); }
+.admin-page__input::placeholder { color: var(--text-muted); }
+
+.admin-page__submit-btn {
+  grid-column: 1 / -1;
+  padding: 11px 16px;
+  background: var(--accent-gold);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.2s;
+}
+.admin-page__submit-btn:hover { opacity: 0.9; }
+
+.admin-page__message {
+  margin-top: 12px;
+  color: var(--accent-gold);
+}
+
+.admin-page__events {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-page__event {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.admin-page__event-title {
+  margin-bottom: 8px;
+}
+
+.admin-page__event-finish {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-page__score-input {
+  width: 60px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--text-main);
+  outline: none;
+  font-family: 'Inter', sans-serif;
+}
+.admin-page__score-input:focus { border-color: var(--accent-gold); }
+
+.admin-chat {
+  display: flex;
+  gap: 14px;
+  height: 420px;
+  margin-bottom: 12px;
+}
+
+.admin-chat__threads {
+  width: 260px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+
+.admin-chat__thread {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.admin-chat__thread:hover { background: var(--bg-sport-item); }
+
+.admin-chat__thread--active { background: var(--bg-sport-item); }
+
+.admin-chat__thread-login {
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.admin-chat__thread-preview {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-chat__dialog {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
+  padding: 14px;
+  overflow: hidden;
+}
+
+.admin-chat__messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.admin-chat__msg {
+  align-self: flex-start;
+  max-width: 75%;
+  background: var(--bg-sport-item);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.admin-chat__msg--support {
+  align-self: flex-end;
+  background: var(--accent-gold);
+  color: #000;
+}
+
+.admin-chat__reply-row {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-chat__reply-row .admin-page__input { flex: 1; }
+
+.admin-page__finish-btn {
+  padding: 8px 14px;
+  background: var(--accent-gold);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.2s;
+}
+.admin-page__finish-btn:hover { opacity: 0.9; }
+
+/* ===== 404 ===== */
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 60vh;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.not-found__code {
+  font-size: 96px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-gold);
+  letter-spacing: 2px;
+}
+
+.not-found__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.not-found__text {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 380px;
+  margin: 0;
+}
+
+.not-found__link {
+  margin-top: 12px;
+  padding: 11px 28px;
+  background: var(--accent-gold);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  text-decoration: none;
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.2s;
+}
+
+.not-found__link:hover { opacity: 0.9; }

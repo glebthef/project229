@@ -64,7 +64,7 @@ export default function Rules() {
             </p>
             </section>
 
-            <section className="doc-section">
+            <section className="doc-section" id="responsible-gaming">
             <h2>7. Ответственная игра</h2>
             <p>
                 PrimeBet напоминает: ставки — это развлечение, а не источник дохода.

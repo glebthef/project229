@@ -86,6 +86,9 @@ export default function RightPanel({ title, icon, data, loading, onAuthOpen }) {
                     <div className="match-card__time">
                       {getMatchStatus(m) === 'live' && <span className="match-card__live">🔴 LIVE</span>}
                       {getMatchStatus(m) === 'finished' ? 'Завершён' : m.time}
+                      {getMatchStatus(m) !== 'upcoming' && (m.home_score != null || m.away_score != null) && (
+                        <span className="match-card__score"> {m.home_score ?? 0}:{m.away_score ?? 0}</span>
+                      )}
                     </div>
                   </div>
                   <div className="match-card__odds">

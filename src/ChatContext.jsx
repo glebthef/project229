@@ -1,64 +1,63 @@
-import { createContext, useContext, useState, useRef, useEffect } from 'react'
+import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from './AuthContext'
+import { getChatMessages, sendChatMessage } from './api'
 
 const ChatContext = createContext(null)
 
-const AUTO_REPLIES = [
-  'Здравствуйте! Мы получили ваше сообщение и скоро ответим.',
-  'Спасибо за обращение! Наш специалист рассмотрит ваш вопрос в ближайшее время.',
-  'Понял вас. Уточняю информацию, ожидайте ответа.',
-  'Ваш запрос принят. Среднее время ответа — 5 минут.',
-]
+const POLL_INTERVAL_MS = 4000
+
+function formatTime(iso) {
+  return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+}
 
 export function ChatProvider({ children }) {
   const { user } = useAuth()
   const [isChatOpen, setIsChatOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      from: 'support',
-      text: 'Здравствуйте! Чем могу помочь?',
-      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-    }
-  ])
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
   const messagesEndRef = useRef(null)
+  const pollRef = useRef(null)
 
   const openChat = () => setIsChatOpen(true)
   const closeChat = () => setIsChatOpen(false)
   const toggleChat = () => setIsChatOpen(v => !v)
 
+  const loadMessages = useCallback(() => {
+    if (!user) return
+    getChatMessages(user.id, user.secret)
+      .then(setMessages)
+      .catch(() => {})
+  }, [user])
+
+  // Пока чат открыт и пользователь авторизован — подтягиваем новые
+  // сообщения с бэкенда (в т.ч. ответы оператора из админки) поллингом.
+  useEffect(() => {
+    if (!isChatOpen || !user) return
+    loadMessages()
+    pollRef.current = setInterval(loadMessages, POLL_INTERVAL_MS)
+    return () => clearInterval(pollRef.current)
+  }, [isChatOpen, user, loadMessages])
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isTyping])
+  }, [messages])
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = input.trim()
-    if (!text) return
-
-    const userMsg = {
-      id: Date.now(),
-      from: 'user',
-      text,
-      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-      login: user?.login || 'Гость',
+    if (!text || !user || sending) return
+    setSending(true)
+    setError('')
+    try {
+      const msg = await sendChatMessage(user.id, user.secret, text)
+      setMessages(prev => [...prev, msg])
+      setInput('')
+    } catch (e) {
+      setError(e.message || 'Не удалось отправить сообщение')
+    } finally {
+      setSending(false)
     }
-    setMessages(prev => [...prev, userMsg])
-    setInput('')
-
-
-    setIsTyping(true)
-    setTimeout(() => {
-      setIsTyping(false)
-      const reply = AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)]
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        from: 'support',
-        text: reply,
-        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-      }])
-    }, 1500)
   }
 
   const handleKeyDown = (e) => {
@@ -86,55 +85,68 @@ export function ChatProvider({ children }) {
             <button className="chat-window__close" onClick={closeChat}>✕</button>
           </div>
 
-          {/* Сообщения */}
-          <div className="chat-window__messages">
-            {messages.map(msg => (
-              <div
-                key={msg.id}
-                className={`chat-msg ${msg.from === 'user' ? 'chat-msg--user' : 'chat-msg--support'}`}
-              >
-                {msg.from === 'support' && (
-                  <div className="chat-msg__avatar">🎧</div>
-                )}
-                <div className="chat-msg__bubble">
-                  <div className="chat-msg__text">{msg.text}</div>
-                  <div className="chat-msg__time">{msg.time}</div>
-                </div>
-              </div>
-            ))}
-
-            {/* Индикатор набора */}
-            {isTyping && (
+          {!user ? (
+            <div className="chat-window__messages">
               <div className="chat-msg chat-msg--support">
                 <div className="chat-msg__avatar">🎧</div>
                 <div className="chat-msg__bubble">
-                  <div className="chat-typing">
-                    <span></span><span></span><span></span>
+                  <div className="chat-msg__text">
+                    Чтобы написать в поддержку, войдите в аккаунт.
                   </div>
                 </div>
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+            </div>
+          ) : (
+            <>
+              {/* Сообщения */}
+              <div className="chat-window__messages">
+                {messages.length === 0 && (
+                  <div className="chat-msg chat-msg--support">
+                    <div className="chat-msg__avatar">🎧</div>
+                    <div className="chat-msg__bubble">
+                      <div className="chat-msg__text">Здравствуйте! Опишите свой вопрос — оператор ответит здесь.</div>
+                    </div>
+                  </div>
+                )}
+                {messages.map(msg => (
+                  <div
+                    key={msg.id}
+                    className={`chat-msg ${msg.sender === 'user' ? 'chat-msg--user' : 'chat-msg--support'}`}
+                  >
+                    {msg.sender === 'support' && (
+                      <div className="chat-msg__avatar">🎧</div>
+                    )}
+                    <div className="chat-msg__bubble">
+                      <div className="chat-msg__text">{msg.text}</div>
+                      <div className="chat-msg__time">{formatTime(msg.created_at)}</div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
 
-          {/* Ввод */}
-          <div className="chat-window__input-row">
-            <textarea
-              className="chat-window__input"
-              placeholder="Введите сообщение..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              rows={2}
-            />
-            <button
-              className="chat-window__send"
-              onClick={sendMessage}
-              disabled={!input.trim()}
-            >
-              ➤
-            </button>
-          </div>
+              {error && <div className="chat-window__error">{error}</div>}
+
+              {/* Ввод */}
+              <div className="chat-window__input-row">
+                <textarea
+                  className="chat-window__input"
+                  placeholder="Введите сообщение..."
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={2}
+                />
+                <button
+                  className="chat-window__send"
+                  onClick={sendMessage}
+                  disabled={!input.trim() || sending}
+                >
+                  ➤
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </ChatContext.Provider>

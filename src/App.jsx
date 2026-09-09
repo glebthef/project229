@@ -1,33 +1,40 @@
-import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Header from './componens/Header'
-import Footer from './componens/Footer'
-import Body from './componens/Body'
-import MainLayout from './componens/MainLayout'
-import AuthModal from './componens/AuthModal'
-import { AuthProvider } from './AuthContext'
-import './App.css'
-import Rules from './componens/Rules'
-import Conf from './componens/Conf'
-import Contacts from './componens/Contacts'
-import Profile from './componens/Profile'
-import { ChatProvider } from './ChatContext'
+import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Header from "./componens/Header";
+import Footer from "./componens/Footer";
+import Body from "./componens/Body";
+import MainLayout from "./componens/MainLayout";
+import AuthModal from "./componens/AuthModal";
+import Admin from "./componens/Admin";
+import { AuthProvider, useAuth } from "./AuthContext";
+import "./App.css";
+import Rules from "./componens/Rules";
+import Conf from "./componens/Conf";
+import Contacts from "./componens/Contacts";
+import Profile from "./componens/Profile";
+import { ChatProvider } from "./ChatContext";
+import NotFound from "./componens/NotFound";
+
+function AdminRoute() {
+  const { user } = useAuth();
+  return user?.is_admin ? <Admin /> : <Navigate to="/" />;
+}
 
 export default function App() {
   const [isLight, setIsLight] = useState(() => {
-    return localStorage.getItem('theme') === 'light'
-  })
-  const [authOpen, setAuthOpen] = useState(false)
+    return localStorage.getItem("theme") === "light";
+  });
+  const [authOpen, setAuthOpen] = useState(false);
 
   useEffect(() => {
     if (isLight) {
-      document.body.classList.add('light-theme')
-      localStorage.setItem('theme', 'light')
+      document.body.classList.add("light-theme");
+      localStorage.setItem("theme", "light");
     } else {
-      document.body.classList.remove('light-theme')
-      localStorage.setItem('theme', 'dark')
+      document.body.classList.remove("light-theme");
+      localStorage.setItem("theme", "dark");
     }
-  }, [isLight])
+  }, [isLight]);
 
   return (
     <AuthProvider>
@@ -43,14 +50,30 @@ export default function App() {
             <Route path="/confidentiality" element={<Conf />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/" element={<Body onAuthOpen={() => setAuthOpen(true)} />} />
-            <Route path="/all-sports" element={<MainLayout onAuthOpen={() => setAuthOpen(true)} />} />
-            <Route path="/all-sports/cybersport" element={<MainLayout onAuthOpen={() => setAuthOpen(true)} initialSport="cybersport" />} />
+            <Route
+              path="/"
+              element={<Body onAuthOpen={() => setAuthOpen(true)} />}
+            />
+            <Route
+              path="/all-sports"
+              element={<MainLayout onAuthOpen={() => setAuthOpen(true)} />}
+            />
+            <Route
+              path="/all-sports/cybersport"
+              element={
+                <MainLayout
+                  onAuthOpen={() => setAuthOpen(true)}
+                  initialSport="cybersport"
+                />
+              }
+            />
+            <Route path="/admin" element={<AdminRoute />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
           <Footer />
           {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
         </BrowserRouter>
-       </ChatProvider> 
+      </ChatProvider>
     </AuthProvider>
-  )
+  );
 }

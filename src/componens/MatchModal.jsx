@@ -6,8 +6,8 @@ import { useAuth, checkConflict, getOutcomeGroup, getMatchStatus } from '../Auth
 export function getExtraMarketsCount(match) {
   const extra = match.extra || {}
   const isCyber = match.sport_slug === 'cybersport'
-  const hasTotal = !match.fromDB || (extra.odd_total_over != null && extra.odd_total_under != null)
-  const hasHandicap = !match.fromDB || (extra.odd_handicap_home != null && extra.odd_handicap_away != null)
+  const hasTotal = extra.odd_total_over != null && extra.odd_total_under != null
+  const hasHandicap = extra.odd_handicap_home != null && extra.odd_handicap_away != null
   if (isCyber) return hasTotal && hasHandicap ? 4 : 0
   return (hasTotal ? 2 : 0) + (hasHandicap ? 2 : 0)
 }
@@ -39,8 +39,8 @@ export default function MatchModal({ match, onClose, onAuthOpen }) {
   // fallback numbers; matches loaded from the DB only offer markets the
   // backend actually priced — otherwise the bet would always be rejected
   // server-side with "outcome is not available".
-  const hasTotal = !match.fromDB || (extra.odd_total_over != null && extra.odd_total_under != null)
-  const hasHandicap = !match.fromDB || (extra.odd_handicap_home != null && extra.odd_handicap_away != null)
+  const hasTotal = extra.odd_total_over != null && extra.odd_total_under != null
+  const hasHandicap = extra.odd_handicap_home != null && extra.odd_handicap_away != null
   const groups = [
     { group: 'Основной исход', outcomes: [
       match.odds?.p1 ? { key:'p1', label:`Победа ${match.home}`, odd: match.odds.p1 } : null,
@@ -81,8 +81,8 @@ export default function MatchModal({ match, onClose, onAuthOpen }) {
           </div>
           <button className="match-modal__close" onClick={onClose}>✕</button>
         </div>
-        {!match.fromDB && <div className="match-modal__warn">⚠️ Демо-событие. Ставки работают только для событий из БД.</div>}
-        {match.fromDB && bettingClosed && (
+       
+        {bettingClosed && (
           <div className="match-modal__warn">
             ⚠️ {matchStatus === 'live' ? 'Событие уже началось — ставки закрыты' : 'Событие завершено — ставки закрыты'}
           </div>

@@ -15,7 +15,7 @@ export default function AuthModal({ onClose }) {
   const [tab, setTab] = useState('login')
   const [form, setForm] = useState({
     login: '', password: '', confirm: '',
-    birthdate: '', agree18: false, agreeRules: false,
+    birthdate: '', agree18: false, agreeRules: false, agreeData: false,
   })
   const [error, setError] = useState('')
 
@@ -32,6 +32,7 @@ export default function AuthModal({ onClose }) {
       if (!isAdult(form.birthdate)) { setError('Регистрация доступна только лицам от 18 лет'); return }
       if (!form.agree18) { setError('Подтвердите, что вам исполнилось 18 лет'); return }
       if (!form.agreeRules) { setError('Необходимо принять правила сервиса'); return }
+      if (!form.agreeData) { setError('Необходимо согласие на обработку персональных данных'); return }
     }
     try {
       if (tab === 'register') await register(form.login, form.password)
@@ -77,7 +78,11 @@ export default function AuthModal({ onClose }) {
             </label>
             <label className="auth-modal__checkbox-row">
               <input type="checkbox" name="agreeRules" checked={form.agreeRules} onChange={handleChange} />
-              <span>Я принимаю <a href="#" className="auth-modal__link">правила сервиса</a></span>
+              <span>Я принимаю <a href="/rules" target="_blank" rel="noopener noreferrer" className="auth-modal__link">правила сервиса</a></span>
+            </label>
+            <label className="auth-modal__checkbox-row">
+              <input type="checkbox" name="agreeData" checked={form.agreeData} onChange={handleChange} />
+              <span>Я согласен на <a href="/confidentiality" target="_blank" rel="noopener noreferrer" className="auth-modal__link">обработку персональных данных</a></span>
             </label>
           </>)}
         </div>
