@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
-import { getUserBets } from '../api'
+import { getUserBets, getDepositStatus } from '../api'
 import DepositModal from './DepositModal'
 
 const OUTCOME_LABELS = {
@@ -16,11 +16,12 @@ const STATUS_LABELS = {
 }
 
 export default function Profile() {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshBalance } = useAuth()
   const navigate = useNavigate()
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(false)
   const [depositOpen, setDepositOpen] = useState(false)
+  const [depositNotice, setDepositNotice] = useState('')
 
   useEffect(() => {
     if (!user) { navigate('/'); return }
@@ -29,6 +30,31 @@ export default function Profile() {
       .then(data => setBets(data))
       .catch(() => setBets([]))
       .finally(() => setLoading(false))
+  }, [user])
+
+  // Пользователь мог только что вернуться со страницы оплаты ЮKassa —
+  // id платежа мы сохраняли в localStorage перед уходом на неё (см.
+  // DepositModal). Проверяем его статус и, если оплата прошла, бэкенд сам
+  // зачислит баланс — нам останется только обновить его на клиенте.
+  useEffect(() => {
+    if (!user) return
+    const paymentId = localStorage.getItem('pendingDepositId')
+    if (!paymentId) return
+
+    getDepositStatus(user.id, user.secret, paymentId)
+      .then(({ status, balance }) => {
+        if (status === 'succeeded') {
+          localStorage.removeItem('pendingDepositId')
+          setDepositNotice(`Баланс пополнен: ${Number(balance).toLocaleString('ru-RU')} ₽ на счету`)
+          refreshBalance()
+        } else if (status === 'canceled') {
+          localStorage.removeItem('pendingDepositId')
+          setDepositNotice('Платёж отменён')
+        } else {
+          setDepositNotice('Платёж обрабатывается — обновите страницу через минуту')
+        }
+      })
+      .catch(() => localStorage.removeItem('pendingDepositId'))
   }, [user])
 
   if (!user) return null
@@ -53,6 +79,8 @@ export default function Profile() {
             <span className="profile-hero__id">ID: {user.id}</span>
           </div>
         </div>
+        {depositNotice && <div className="profile-deposit-notice">{depositNotice}</div>}
+
         <div className="profile-stats">
           <div className="profile-stat-card profile-stat-card--balance">
             <div className="profile-stat-card__icon">💰</div>

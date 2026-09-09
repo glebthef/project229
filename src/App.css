@@ -2632,6 +2632,16 @@ body {
   color: var(--text-muted);
 }
 
+.profile-deposit-notice {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--text-main);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
 /* Карточки статистики */
 .profile-stats {
   display: grid;

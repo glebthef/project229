@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useAuth } from '../AuthContext'
-import { patchBalance } from '../api'
+import { patchBalance, createDeposit } from '../api'
 
 const AMOUNTS = [500, 1000, 2000, 5000, 10000]
 const METHODS = [
   { id: 'sbp',      name: 'СБП',             icon: '🏦', desc: 'Система быстрых платежей', min: 100 },
   { id: 'card',     name: 'Банковская карта', icon: '💳', desc: 'Visa, Mastercard, МИР',    min: 100 },
-  { id: 'yookassa', name: 'ЮКасса',           icon: '💰', desc: 'YooMoney / кошелёк',       min: 50  },
+  { id: 'stripe',   name: 'Оплата картой',    icon: '🧪', desc: 'Тестовый платёж (Stripe)', min: 50  },
 ]
 
 export default function DepositModal({ onClose }) {
@@ -33,7 +33,20 @@ export default function DepositModal({ onClose }) {
   const handleConfirm = async () => {
     const num = parseFloat(amount)
     setLoading(true)
+    setError('')
     try {
+      if (method === 'stripe') {
+        // Реальная (тестовая) оплата: создаём Checkout Session в Stripe и
+        // уводим пользователя на её страницу подтверждения. Зачисление
+        // баланса происходит не здесь, а после возврата на /profile — см. Profile.jsx.
+        const returnUrl = `${window.location.origin}/profile`
+        const { payment_id, confirmation_url } = await createDeposit(user.id, user.secret, num, returnUrl)
+        localStorage.setItem('pendingDepositId', payment_id)
+        window.location.href = confirmation_url
+        return
+      }
+      // СБП/карта — заглушка без реального провайдера, как и раньше:
+      // мгновенно зачисляем на баланс.
       await patchBalance(user.id, user.secret, num)
       updateBalance(num)
       setStep('success')

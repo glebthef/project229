@@ -153,3 +153,15 @@ export const sendChatMessage = (userId, secret, text) =>
 
 export const getAllChatsAdmin = (secret) =>
   request("/chats", { headers: { "session-secret": secret } })
+
+export const createDeposit = (userId, secret, amount, returnUrl) =>
+  request(`/users/${userId}/deposits`, {
+    method: "POST",
+    headers: { "session-secret": secret },
+    body: JSON.stringify({ amount: parseFloat(amount), return_url: returnUrl }),
+  })
+
+export const getDepositStatus = (userId, secret, paymentId) =>
+  request(`/users/${userId}/deposits/${paymentId}`, {
+    headers: { "session-secret": secret },
+  })
