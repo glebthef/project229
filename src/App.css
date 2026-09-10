@@ -3460,3 +3460,160 @@ body {
 }
 
 .not-found__link:hover { opacity: 0.9; }
+
+/* ================================================
+   АДАПТИВ — три брейкпоинта: 1024 / 768 / 480
+   ================================================ */
+
+/* На десктопе главная не должна уезжать под фиксированный купон справа
+   (.right-side: position:fixed; right:20px; width:340px).
+   min-width:0 — чтобы .left-side как flex-элемент мог сжиматься уже своего
+   контента, иначе горизонтальный скролл .sports-nav «распирает» страницу. */
+.left-side {
+  margin-right: 372px;
+  min-width: 0;
+}
+
+/* ---------- ≤1024px: планшет ---------- */
+@media (max-width: 1024px) {
+  .header { padding: 0 20px; }
+
+  /* Главная: купон уходит из фикс-позиции в обычный поток под события */
+  .left-side {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 20px;
+  }
+  .main-part { flex-direction: column; }
+  .right-side {
+    position: static;
+    width: auto;
+    height: auto;
+    align-items: stretch;
+    margin: 20px;
+    padding: 0;
+    background: none;
+    border: none;
+    z-index: auto;
+  }
+  .coupon { width: 100%; max-height: none; }
+
+  /* /all-sports: три колонки → список спорта горизонтально сверху,
+     панель матчей и купон на всю ширину */
+  .main-layout { flex-wrap: wrap; }
+  .left-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .left-panel .sports-list {
+    flex-direction: row !important;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .left-panel .sport-item {
+    width: auto !important;
+    flex: 0 0 auto !important;
+  }
+  .right-panel { flex-basis: 100%; }
+  .all-sports-coupon,
+  .coupon-sidebar {
+    position: static;
+    width: 100%;
+    margin-top: 16px;
+  }
+}
+
+/* ---------- ≤768px: телефон ---------- */
+@media (max-width: 768px) {
+  .header {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .leftside { padding: 0; }
+  .logo { font-size: 20px; padding: 6px 12px; }
+  .rightside { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .hbtn { font-size: 14px; }
+  .btn-sign, .btn-auth { width: auto; padding: 0 14px; height: 34px; }
+  .header-username {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Главная: события */
+  .left-side { padding: 0 12px; }
+  .sports-nav { gap: 8px; padding: 8px 2px; max-width: 100%; }
+  .sports-nav .sport-item { flex: 0 0 96px; height: 48px; font-size: 13px; }
+
+  .match-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .match-card__team-name { white-space: normal; }
+  .match-card__odds { justify-content: space-between; }
+  .match-card__odd {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    height: 50px;
+  }
+
+  /* Модальные окна */
+  .auth-overlay { padding: 16px; }
+  .auth-modal, .deposit-modal { width: 100%; max-width: 400px; padding: 24px 20px; }
+
+  /* Чат поддержки — во всю ширину экрана снизу */
+  .chat-window {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    width: auto;
+    height: 70vh;
+  }
+
+  /* Профиль */
+  .profile-page { padding: 20px 12px; }
+  .profile-stats { grid-template-columns: repeat(2, 1fr); }
+  .profile-bet { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .profile-bet__right { width: 100%; justify-content: space-between; }
+
+  /* Документы / футер */
+  .doc-page { padding: 24px 14px 48px; }
+  .doc-title { font-size: 22px; }
+  .footer-top { flex-direction: column; gap: 20px; }
+
+  /* Админка */
+  .admin-page__form { grid-template-columns: 1fr; }
+  .admin-chat { flex-direction: column; height: auto; }
+  .admin-chat__threads { width: 100%; max-height: 200px; }
+  .admin-chat__dialog { height: 380px; }
+}
+
+/* ---------- ≤480px: узкие телефоны ---------- */
+@media (max-width: 480px) {
+  .logo { font-size: 18px; }
+  .toggle-label { display: none; }  /* тумблер темы прячем, чтобы хедер влез */
+
+  .sports-nav .sport-item { flex-basis: 84px; height: 44px; }
+
+  .match-card__odd { height: 46px; }
+  .match-card__odd-value { font-size: 14px; }
+
+  .profile-stats { grid-template-columns: 1fr; }
+  .profile-hero { flex-direction: column; text-align: center; gap: 12px; }
+
+  .doc-title { font-size: 20px; }
+  .sport-title { font-size: 17px; }
+  .admin-page h1 { font-size: 22px; }
+
+  .coupon__quick-amounts { flex-wrap: wrap; }
+  .auth-modal, .deposit-modal { padding: 20px 16px; }
+}
