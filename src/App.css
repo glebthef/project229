@@ -1316,25 +1316,6 @@ body {
   color: var(--text-main);
 }
 
-.deposit__success-icon {
-  font-size: 52px;
-  text-align: center;
-}
-
-.deposit__success-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-main);
-  text-align: center;
-}
-
-.deposit__success-sub {
-  font-size: 15px;
-  color: #4caf50;
-  font-weight: 600;
-  text-align: center;
-}
-
 /* ================================================
    18+ В ФОРМЕ РЕГИСТРАЦИИ
    ================================================ */

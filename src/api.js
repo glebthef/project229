@@ -32,13 +32,6 @@ export const register = (login, password) =>
 
 export const getUser = (userId) => request(`/users/${userId}`)
 
-export const patchBalance = (userId, secret, amount) =>
-  request(`/users/${userId}/balance`, {
-    method: "PATCH",
-    headers: { "session-secret": secret },
-    body: JSON.stringify({ amount }),
-  })
-
 export const createSession = (login, password) =>
   request("/sessions", { method: "POST", headers: { login, password } })
 

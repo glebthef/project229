@@ -82,14 +82,6 @@ export function AuthProvider({ children }) {
     saveUser({ ...user, balance: fresh.balance })
   }
 
-  const updateBalance = (amount) => {
-    setUser(prev => {
-      const updated = { ...prev, balance: (prev.balance || 0) + amount }
-      localStorage.setItem('user', JSON.stringify(updated))
-      return updated
-    })
-  }
-
   const setBetsHistory = (updater) => {
     setBetsHistoryState(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
@@ -154,7 +146,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, loading,
-      login, logout, register, updateBalance, refreshBalance,
+      login, logout, register, refreshBalance,
       coupon, stake, setStake, toggleOdd, removeFromCoupon, clearCoupon,
       betsHistory, setBetsHistory,
     }}>

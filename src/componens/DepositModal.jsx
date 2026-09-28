@@ -1,23 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "../AuthContext";
-import { patchBalance, createDeposit } from "../api";
+import { createDeposit } from "../api";
 
 const AMOUNTS = [500, 1000, 2000, 5000, 10000];
+// Единственный способ пополнения — Stripe в тестовом режиме: баланс
+// зачисляет только бэкенд, после того как Stripe подтвердил оплату
+// (см. Profile.jsx и routes/payments.py).
 const METHODS = [
-  {
-    id: "sbp",
-    name: "СБП",
-    icon: "🏦",
-    desc: "Система быстрых платежей",
-    min: 100,
-  },
-  {
-    id: "card",
-    name: "Банковская карта",
-    icon: "💳",
-    desc: "Visa, Mastercard, МИР",
-    min: 100,
-  },
   {
     id: "stripe",
     name: "Оплата картой",
@@ -28,8 +17,8 @@ const METHODS = [
 ];
 
 export default function DepositModal({ onClose }) {
-  const { user, updateBalance } = useAuth();
-  const [method, setMethod] = useState(null);
+  const { user } = useAuth();
+  const [method, setMethod] = useState("stripe");
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState("choose");
   const [error, setError] = useState("");
@@ -60,21 +49,15 @@ export default function DepositModal({ onClose }) {
     setLoading(true);
     setError("");
     try {
-      if (method === "stripe") {
-        const returnUrl = `${window.location.origin}/profile`;
-        const { payment_id, confirmation_url } = await createDeposit(
-          user.id,
-          user.secret,
-          num,
-          returnUrl,
-        );
-        localStorage.setItem("pendingDepositId", payment_id);
-        window.location.href = confirmation_url;
-        return;
-      }
-      await patchBalance(user.id, user.secret, num);
-      updateBalance(num);
-      setStep("success");
+      const returnUrl = `${window.location.origin}/profile`;
+      const { payment_id, confirmation_url } = await createDeposit(
+        user.id,
+        user.secret,
+        num,
+        returnUrl,
+      );
+      localStorage.setItem("pendingDepositId", payment_id);
+      window.location.href = confirmation_url;
     } catch (e) {
       setError(e.message || "Ошибка при пополнении");
     } finally {
@@ -176,7 +159,7 @@ export default function DepositModal({ onClose }) {
               disabled={loading}
             >
               {loading
-                ? "Зачисление..."
+                ? "Переход к оплате..."
                 : `Пополнить ${parseFloat(amount).toLocaleString()} ₽`}
             </button>
             <button
@@ -184,19 +167,6 @@ export default function DepositModal({ onClose }) {
               onClick={() => setStep("choose")}
             >
               ← Назад
-            </button>
-          </>
-        )}
-
-        {step === "success" && (
-          <>
-            <div className="deposit__success-icon">✅</div>
-            <div className="deposit__success-title">Счёт пополнен!</div>
-            <div className="deposit__success-sub">
-              +{parseFloat(amount).toLocaleString()} ₽ зачислено
-            </div>
-            <button className="auth-modal__submit" onClick={onClose}>
-              Готово
             </button>
           </>
         )}
