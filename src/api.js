@@ -120,6 +120,13 @@ export const deleteSportAdmin = (secret, sportId) =>
     headers: { "session-secret": secret },
   })
 
+export const creditBalanceAdmin = (secret, userId, amount) =>
+  request(`/users/${userId}/balance`, {
+    method: "POST",
+    headers: { "session-secret": secret },
+    body: JSON.stringify({ amount }),
+  })
+
 export const banUser = (secret, userId, banned) =>
   request(`/users/${userId}/ban`, {
     method: "PATCH",

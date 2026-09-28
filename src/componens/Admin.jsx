@@ -11,6 +11,7 @@ import {
   getSports,
   getAllUsers,
   banUser,
+  creditBalanceAdmin,
   updateLiveScore,
   getAllChatsAdmin,
   getChatMessages,
@@ -44,7 +45,7 @@ function toDatetimeLocal(isoString) {
 }
 
 export default function Admin() {
-  const { user } = useAuth();
+  const { user, refreshBalance } = useAuth();
 
   const [sports, setSports] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -56,6 +57,8 @@ export default function Admin() {
   const [sportForm, setSportForm] = useState({ name: "", icon: "", slug: "" });
   const [sportMessage, setSportMessage] = useState("");
   const [users, setUsers] = useState([]);
+  const [creditAmounts, setCreditAmounts] = useState({});
+  const [userMessage, setUserMessage] = useState("");
 
   const [chats, setChats] = useState([]);
   const [selectedChatUserId, setSelectedChatUserId] = useState(null);
@@ -252,7 +255,24 @@ export default function Admin() {
       await banUser(user.secret, u.id, !u.is_banned);
       loadUsers();
     } catch (err) {
-      setMessage("Ошибка: " + err.message);
+      setUserMessage("Ошибка: " + err.message);
+    }
+  };
+
+  const handleCredit = async (u) => {
+    const amount = parseFloat(creditAmounts[u.id]);
+    if (!amount || amount <= 0) {
+      setUserMessage("Введите сумму больше нуля");
+      return;
+    }
+    try {
+      await creditBalanceAdmin(user.secret, u.id, amount);
+      setUserMessage(`Начислено ${amount.toLocaleString("ru-RU")} ₽ пользователю ${u.login}`);
+      setCreditAmounts({ ...creditAmounts, [u.id]: "" });
+      loadUsers();
+      if (u.id === user.id) refreshBalance();
+    } catch (err) {
+      setUserMessage("Ошибка: " + err.message);
     }
   };
 
@@ -419,14 +439,28 @@ export default function Admin() {
           <div key={u.id} className="admin-page__event">
             #{u.id} {u.login} — баланс {u.balance} ₽ {u.is_admin && "· админ"}{" "}
             {u.is_banned && "· ЗАБАНЕН"}
-            {!u.is_admin && (
-              <button className="admin-page__finish-btn" onClick={() => handleBanToggle(u)} style={{ marginLeft: 12 }}>
-                {u.is_banned ? "Разбанить" : "Забанить"}
+            <div className="admin-page__event-finish" style={{ marginTop: 8 }}>
+              <input
+                className="admin-page__score-input admin-page__credit-input"
+                type="number"
+                min="1"
+                placeholder="Сумма"
+                value={creditAmounts[u.id] ?? ""}
+                onChange={(e) => setCreditAmounts({ ...creditAmounts, [u.id]: e.target.value })}
+              />
+              <button className="admin-page__finish-btn" onClick={() => handleCredit(u)}>
+                Начислить
               </button>
-            )}
+              {!u.is_admin && (
+                <button className="admin-page__finish-btn" onClick={() => handleBanToggle(u)}>
+                  {u.is_banned ? "Разбанить" : "Забанить"}
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
+      {userMessage && <p className="admin-page__message">{userMessage}</p>}
     </div>
   );
 }
