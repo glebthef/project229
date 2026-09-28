@@ -35,6 +35,13 @@ const emptyForm = {
   odd_handicap_away: "",
 };
 
+// Матч начался больше 3 часов назад, а результат так и не внесён: ставки на
+// него висят «в ожидании», пока админ его не завершит.
+const OVERDUE_MS = 3 * 60 * 60 * 1000;
+function isOverdue(ev) {
+  return ev.status !== "finished" && new Date(ev.starts_at).getTime() < Date.now() - OVERDUE_MS;
+}
+
 // Backend sends "2026-09-10T20:00:00Z"; <input type="datetime-local"> needs
 // "2026-09-10T20:00" in the browser's own local time.
 function toDatetimeLocal(isoString) {
@@ -188,9 +195,10 @@ export default function Admin() {
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm(`Удалить событие #${eventId}?`)) return;
+    if (!window.confirm(`Удалить событие #${eventId}? Нерассчитанные ставки по нему уйдут в возврат.`)) return;
     try {
-      await deleteEventAdmin(user.secret, eventId);
+      const res = await deleteEventAdmin(user.secret, eventId);
+      setMessage(`Событие #${eventId} удалено. Исходов в возврат: ${res.legs_refunded}`);
       loadEvents();
     } catch (err) {
       setMessage("Ошибка: " + err.message);
@@ -321,9 +329,10 @@ export default function Admin() {
 
       <h2>События</h2>
       <div className="admin-page__events">
-        {events.map((ev) => (
+        {[...events].sort((a, b) => isOverdue(b) - isOverdue(a)).map((ev) => (
           <div key={ev.id} className="admin-page__event">
             <div className="admin-page__event-title">
+              {isOverdue(ev) && <span className="admin-page__overdue">⚠ пора завершить</span>}
               #{ev.id} {ev.home} — {ev.away} ({ev.sport_slug}) — {ev.status}
               {(ev.home_score != null || ev.away_score != null) && (
                 <strong> — {ev.home_score ?? 0}:{ev.away_score ?? 0}</strong>

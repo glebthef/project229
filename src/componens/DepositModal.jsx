@@ -50,13 +50,13 @@ export default function DepositModal({ onClose }) {
     setError("");
     try {
       const returnUrl = `${window.location.origin}/profile`;
-      const { payment_id, confirmation_url } = await createDeposit(
+      const { confirmation_url } = await createDeposit(
         user.id,
         user.secret,
         num,
         returnUrl,
       );
-      localStorage.setItem("pendingDepositId", payment_id);
+      // Зачисление проверит профиль после возврата (см. Profile.jsx).
       window.location.href = confirmation_url;
     } catch (e) {
       setError(e.message || "Ошибка при пополнении");

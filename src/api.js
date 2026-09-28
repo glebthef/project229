@@ -42,7 +42,11 @@ export const getEvents = (sportSlug = null) =>
   request(sportSlug ? `/events?sport_slug=${sportSlug}` : "/events")
 
 
-export const createSingleBet = (userId, secret, eventId, outcome, amount) =>
+// expectedOdd — коэффициент, который пользователь видел в купоне. Если он
+// успел измениться, бэкенд отклонит ставку (409), а не примет её молча.
+const toOdd = (odd) => (odd != null ? parseFloat(odd) : null)
+
+export const createSingleBet = (userId, secret, eventId, outcome, amount, expectedOdd) =>
   request(`/users/${userId}/bets/single`, {
     method: "POST",
     headers: { "session-secret": secret },
@@ -50,6 +54,7 @@ export const createSingleBet = (userId, secret, eventId, outcome, amount) =>
       event_id: parseInt(eventId),
       outcome: String(outcome),
       amount: parseFloat(amount),
+      expected_odd: toOdd(expectedOdd),
     }),
   })
 
@@ -63,6 +68,7 @@ export const createExpressBet = (userId, secret, legs, amount) =>
       legs: legs.map(l => ({
         event_id: parseInt(l.event_id),
         outcome: String(l.outcome),
+        expected_odd: toOdd(l.expected_odd),
       })),
     }),
   })
@@ -161,7 +167,10 @@ export const createDeposit = (userId, secret, amount, returnUrl) =>
     body: JSON.stringify({ amount: parseFloat(amount), return_url: returnUrl }),
   })
 
-export const getDepositStatus = (userId, secret, paymentId) =>
-  request(`/users/${userId}/deposits/${paymentId}`, {
+// Сверяет со Stripe все незавершённые платежи пользователя и зачисляет
+// оплаченные — независимо от того, в каком браузере была оплата.
+export const syncDeposits = (userId, secret) =>
+  request(`/users/${userId}/deposits/sync`, {
+    method: "POST",
     headers: { "session-secret": secret },
   })

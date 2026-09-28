@@ -72,8 +72,11 @@ export default function Body({ onAuthOpen }) {
       .catch(() => setSportList([]));
   }, []);
   const currentEvents = dbEvents.filter((e) => e.is_active);
+  // Завершённые матчи на главной не показываем — ставки на них уже закрыты.
+  // Купон при этом получает все события, чтобы пометить устаревшие исходы.
+  const visibleEvents = currentEvents.filter((e) => e.status !== "finished");
 
-  const grouped = currentEvents.reduce((acc, match) => {
+  const grouped = visibleEvents.reduce((acc, match) => {
     if (!acc[match.league]) acc[match.league] = [];
     acc[match.league].push(match);
     return acc;

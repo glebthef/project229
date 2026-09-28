@@ -48,10 +48,13 @@ export default function MatchModal({ match, onClose, onAuthOpen }) {
       match.odds?.p2 ? { key:'p2', label:`Победа ${match.away}`, odd: match.odds.p2 } : null,
     ].filter(Boolean) },
     isCyber && hasTotal && hasHandicap ? { group:'Карты', outcomes: [
-      { key:'total_over',    label:'Больше 2.5 карт',          odd: extra.odd_total_over    ?? +((p2)*1.2).toFixed(2) },
-      { key:'total_under',   label:'Меньше 2.5 карт',          odd: extra.odd_total_under   ?? +((p1)*0.8).toFixed(2) },
-      { key:'handicap_home', label:`${match.home} +1.5 карты`, odd: extra.odd_handicap_home ?? +((p1)*0.75).toFixed(2) },
-      { key:'handicap_away', label:`${match.away} +1.5 карты`, odd: extra.odd_handicap_away ?? +((p2)*0.75).toFixed(2) },
+      // Линии — из события, а не зашитые числа: расчёт на бэкенде идёт по
+      // total_value/handicap_value, и подпись должна им совпадать. Фора
+      // гостей — со знаком минус, как и в расчёте (хозяева +h, гости −h).
+      { key:'total_over',    label:`Больше ${totalVal} карт`,              odd: extra.odd_total_over    ?? +((p2)*1.2).toFixed(2) },
+      { key:'total_under',   label:`Меньше ${totalVal} карт`,              odd: extra.odd_total_under   ?? +((p1)*0.8).toFixed(2) },
+      { key:'handicap_home', label:`${match.home} (+${handicapVal}) по картам`, odd: extra.odd_handicap_home ?? +((p1)*0.75).toFixed(2) },
+      { key:'handicap_away', label:`${match.away} (-${handicapVal}) по картам`, odd: extra.odd_handicap_away ?? +((p2)*0.75).toFixed(2) },
     ]} : (!isCyber && hasTotal ? { group:`Тотал (${totalVal})`, outcomes: [
       { key:'total_over',  label:`Больше ${totalVal}`, odd: extra.odd_total_over  ?? +((p2)*1.1).toFixed(2) },
       { key:'total_under', label:`Меньше ${totalVal}`, odd: extra.odd_total_under ?? +((p1)*0.9).toFixed(2) },
@@ -95,7 +98,7 @@ export default function MatchModal({ match, onClose, onAuthOpen }) {
           </div>
           <button className="match-modal__stream-btn" disabled>Смотреть</button>
         </div>
-        <div className="match-modal__hint">💡 Выбирай исходы из разных групп — они объединятся в экспресс</div>
+        <div className="match-modal__hint">💡 Несколько исходов одного матча ставятся ординарами, в экспресс — исходы разных матчей</div>
         <div className="match-modal__body">
           {groups.map(g => (
             <div key={g.group} className="match-modal__group">

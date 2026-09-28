@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
-import { getUserBets, getDepositStatus } from '../api'
+import { getUserBets, syncDeposits } from '../api'
 import DepositModal from './DepositModal'
 
 const OUTCOME_LABELS = {
@@ -32,30 +32,26 @@ export default function Profile() {
       .finally(() => setLoading(false))
   }, [user])
 
-  // Пользователь мог только что вернуться со страницы оплаты ЮKassa —
-  // id платежа мы сохраняли в localStorage перед уходом на неё (см.
-  // DepositModal). Проверяем его статус и, если оплата прошла, бэкенд сам
-  // зачислит баланс — нам останется только обновить его на клиенте.
+  // При каждом открытии профиля бэкенд сверяет со Stripe все незавершённые
+  // платежи и зачисляет оплаченные. Так деньги придут, даже если после
+  // оплаты пользователь закрыл вкладку или зашёл с другого устройства.
+  // session_id в адресе значит, что он только что вернулся со страницы Stripe.
   useEffect(() => {
     if (!user) return
-    const paymentId = localStorage.getItem('pendingDepositId')
-    if (!paymentId) return
+    const justPaid = new URLSearchParams(window.location.search).has('session_id')
+    if (justPaid) window.history.replaceState(null, '', window.location.pathname)
 
-    getDepositStatus(user.id, user.secret, paymentId)
-      .then(({ status, balance }) => {
-        if (status === 'succeeded') {
-          localStorage.removeItem('pendingDepositId')
-          setDepositNotice(`Баланс пополнен: ${Number(balance).toLocaleString('ru-RU')} ₽ на счету`)
+    syncDeposits(user.id, user.secret)
+      .then(({ credited, pending }) => {
+        if (credited > 0) {
+          setDepositNotice(`Баланс пополнен на ${credited.toLocaleString('ru-RU')} ₽`)
           refreshBalance()
-        } else if (status === 'canceled') {
-          localStorage.removeItem('pendingDepositId')
-          setDepositNotice('Платёж отменён')
-        } else {
+        } else if (justPaid && pending > 0) {
           setDepositNotice('Платёж обрабатывается — обновите страницу через минуту')
         }
       })
-      .catch(() => localStorage.removeItem('pendingDepositId'))
-  }, [user])
+      .catch(() => {})
+  }, [user?.id])
 
   if (!user) return null
 

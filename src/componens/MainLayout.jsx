@@ -56,10 +56,14 @@ export default function MainLayout({ onAuthOpen, initialSport = 'football' }) {
   }, [])
 
   const currentSport = sportList.find(s => s.slug === activeId)
-  const activeDbEvents = dbEvents.filter(e => e.is_active && e.sport_slug === activeId)
-  const currentEvents =  activeDbEvents
-  const eventCounts = dbEvents.reduce((acc, e) => {
-    if (e.is_active) acc[e.sport_slug] = (acc[e.sport_slug] || 0) + 1
+  const activeEvents = dbEvents.filter(e => e.is_active)
+  // В списке и счётчиках — только незавершённые матчи; купону отдаём все
+  // активные события всех видов спорта, чтобы у любого исхода в нём были
+  // свежий коэффициент и статус матча.
+  const openEvents = activeEvents.filter(e => e.status !== 'finished')
+  const currentEvents = openEvents.filter(e => e.sport_slug === activeId)
+  const eventCounts = openEvents.reduce((acc, e) => {
+    acc[e.sport_slug] = (acc[e.sport_slug] || 0) + 1
     return acc
   }, {})
   const sportsWithCounts = sportList.map(s => ({ ...s, count: eventCounts[s.slug] || 0 }))
@@ -76,7 +80,7 @@ export default function MainLayout({ onAuthOpen, initialSport = 'football' }) {
           onAuthOpen={onAuthOpen}
         />
         <div className="right-side all-sports-coupon">
-          <Coupon onAuthOpen={onAuthOpen} onEventsUpdate={loadEvents} events={currentEvents} />
+          <Coupon onAuthOpen={onAuthOpen} onEventsUpdate={loadEvents} events={activeEvents} />
         </div>
       </div>
     </div>
