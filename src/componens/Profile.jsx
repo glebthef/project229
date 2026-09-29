@@ -3,12 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import { getUserBets, syncDeposits } from '../api'
 import DepositModal from './DepositModal'
-
-const OUTCOME_LABELS = {
-  p1: 'П1', x: 'X', p2: 'П2',
-  total_over: 'Тотал >', total_under: 'Тотал <',
-  handicap_home: 'Фора 1', handicap_away: 'Фора 2',
-}
+import BetLegs from './BetLegs'
 
 const STATUS_LABELS = {
   won: '✅ Выиграл', lost: '❌ Проиграл', pending: '⏳ Ожидание',
@@ -58,9 +53,11 @@ export default function Profile() {
   const won  = bets.filter(b => b.status === 'won').length
   const lost = bets.filter(b => b.status === 'lost').length
   const pending = bets.filter(b => b.status === 'pending').length
+  // Фактически начисленное, а не потенциальное: если часть экспресса ушла
+  // в возврат, выплата меньше.
   const totalWinAmount = bets
     .filter(b => b.status === 'won')
-    .reduce((acc, b) => acc + parseFloat(b.potential_payout), 0)
+    .reduce((acc, b) => acc + parseFloat(b.actual_payout), 0)
 
   return (
     <div className="profile-page">
@@ -147,34 +144,36 @@ export default function Profile() {
           {!loading && bets.length > 0 && (
             <div className="profile-bets">
               {bets.map(bet => {
-                const outcomeLabel = (bet.legs || [])
-                  .map(l => OUTCOME_LABELS[l.outcome] || l.outcome)
-                  .join(' + ')
+                const played = bet.legs.filter(l => l.status !== 'pending').length
+                const title = bet.type === 'express'
+                  ? `Экспресс · ${bet.legs.length} соб.${bet.status === 'pending' ? ` · сыграло ${played} из ${bet.legs.length}` : ''}`
+                  : 'Ординар'
                 return (
                   <div className="profile-bet" key={bet.id}>
-                    <div className="profile-bet__left">
-                      <span className="profile-bet__id">#{bet.id}</span>
-                      <span className="profile-bet__outcome">
-                        Исход: <strong>{outcomeLabel}</strong>
-                      </span>
-                      <span className="profile-bet__odd">× {bet.combined_odd}</span>
-                    </div>
-                    <div className="profile-bet__right">
-                      <span className="profile-bet__amount">{bet.amount} ₽</span>
-                      <span className={`profile-bet__status profile-bet__status--${bet.status}`}>
-                        {STATUS_LABELS[bet.status] || bet.status}
-                      </span>
-                      {bet.status === 'won' && (
-                        <span className="profile-bet__win">
-                          +{parseFloat(bet.potential_payout).toFixed(2)} ₽
+                    <div className="profile-bet__head">
+                      <div className="profile-bet__left">
+                        <span className="profile-bet__id">#{bet.id}</span>
+                        <span className="profile-bet__outcome"><strong>{title}</strong></span>
+                        <span className="profile-bet__odd">× {parseFloat(bet.combined_odd).toFixed(2)}</span>
+                      </div>
+                      <div className="profile-bet__right">
+                        <span className="profile-bet__amount">{bet.amount} ₽</span>
+                        <span className={`profile-bet__status profile-bet__status--${bet.status}`}>
+                          {STATUS_LABELS[bet.status] || bet.status}
                         </span>
-                      )}
-                      {bet.status === 'refund' && (
-                        <span className="profile-bet__win">
-                          ↩ {parseFloat(bet.amount).toFixed(2)} ₽
-                        </span>
-                      )}
+                        {bet.status === 'won' && (
+                          <span className="profile-bet__win">
+                            +{parseFloat(bet.actual_payout).toFixed(2)} ₽
+                          </span>
+                        )}
+                        {bet.status === 'refund' && (
+                          <span className="profile-bet__win">
+                            ↩ {parseFloat(bet.amount).toFixed(2)} ₽
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    <BetLegs legs={bet.legs} />
                   </div>
                 )
               })}

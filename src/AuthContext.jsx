@@ -34,10 +34,9 @@ export function AuthProvider({ children }) {
   })
   const [coupon, setCoupon] = useState({})
   const [stake, setStake] = useState('')
-  const [betsHistory, setBetsHistoryState] = useState(() => {
-    const saved = localStorage.getItem('betsHistory')
-    return saved ? JSON.parse(saved) : []
-  })
+  // История ставок — всегда с сервера (Coupon подгружает её через
+  // getUserBets), поэтому одинакова на любом устройстве и после перелогина.
+  const [betsHistory, setBetsHistory] = useState([])
   const [loading, setLoading] = useState(false)
 
   const saveUser = (userData) => {
@@ -69,25 +68,17 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     if (user?.secret) await deleteSession(user.secret).catch(() => {})
     localStorage.removeItem('user')
-    localStorage.removeItem('betsHistory')
+    localStorage.removeItem('betsHistory') // ключ старой версии, где история жила в браузере
     setUser(null)
     setCoupon({})
     setStake('')
-    setBetsHistoryState([])
+    setBetsHistory([])
   }
 
   const refreshBalance = async () => {
     if (!user) return
     const fresh = await getUser(user.id)
     saveUser({ ...user, balance: fresh.balance })
-  }
-
-  const setBetsHistory = (updater) => {
-    setBetsHistoryState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      localStorage.setItem('betsHistory', JSON.stringify(next))
-      return next
-    })
   }
 
   const toggleOdd = (match, outcome) => {
@@ -101,9 +92,7 @@ export function AuthProvider({ children }) {
 
       const alreadyBet = betsHistory.some(bet =>
         bet.status === 'pending' &&
-        bet.items.some(item =>
-          item.match.id === match.id && item.outcome === outcome
-        )
+        bet.legs.some(leg => leg.event_id === match.id && leg.outcome === outcome)
       )
       if (alreadyBet) {
 

@@ -1835,18 +1835,6 @@ body {
   color: var(--text-muted);
 }
 
-.coupon__history-event {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.coupon__history-match {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
 .coupon__history-footer {
   display: flex;
   justify-content: space-between;
@@ -2343,11 +2331,17 @@ body {
 
 .profile-bet {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   padding: 12px 14px;
   background: var(--bg-input);
   border-radius: 10px;
+  gap: 10px;
+}
+
+.profile-bet__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
 }
 
@@ -2397,13 +2391,58 @@ body {
 
 .profile-bet__status--won  { background: rgba(76,175,80,0.15);  color: #4caf50; }
 .profile-bet__status--lost { background: rgba(224,85,85,0.15); color: #e05555; }
-.profile-bet__status--pending { background: rgba(160,160,160,0.15); color: #aaa; }
+.profile-bet__status--pending,
+.profile-bet__status--refund,
+.profile-bet__status--cancelled { background: rgba(160,160,160,0.15); color: #aaa; }
 
 .profile-bet__win {
   font-size: 13px;
   font-weight: 700;
   color: #4caf50;
 }
+
+/* Исходы ставки (BetLegs) — в истории купона и в профиле */
+.bet-legs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bet-leg {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: 8px;
+  align-items: start;
+  font-size: 13px;
+}
+
+.bet-leg__icon { line-height: 1.4; }
+
+.bet-leg__info { min-width: 0; }
+
+.bet-leg__match {
+  color: var(--text-main);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.bet-leg__meta {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.bet-leg__odd {
+  font-weight: 700;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+}
+
+.bet-leg--won .bet-leg__state  { color: #4caf50; font-weight: 600; }
+.bet-leg--lost .bet-leg__state { color: #e05555; font-weight: 600; }
+.bet-leg--live .bet-leg__state { color: #e05555; }
+.bet-leg--lost .bet-leg__match,
+.bet-leg--muted .bet-leg__match { opacity: 0.6; }
 
 .profile-logout {
   padding: 13px;
@@ -2808,8 +2847,6 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
-.coupon__item-odd--won  { color: #4caf50 !important; }
-.coupon__item-odd--lost { color: #e05555 !important; }
 
 /* ===== Admin ===== */
 .admin-page {
@@ -3185,7 +3222,7 @@ body {
   /* Профиль */
   .profile-page { padding: 20px 12px; }
   .profile-stats { grid-template-columns: repeat(2, 1fr); }
-  .profile-bet { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .profile-bet__head { flex-direction: column; align-items: flex-start; gap: 8px; }
   .profile-bet__right { width: 100%; justify-content: space-between; }
 
   /* Документы / футер */
