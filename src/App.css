@@ -494,8 +494,8 @@ body {
 /* ===== ЛЕВАЯ ПАНЕЛЬ ===== */
 .left-panel {
   width: 240px;
-  background-color: var(--bg-card);      /* ← Замени #1a1f2e */
-  border-right: 1px solid var(--border-color); /* ← Замени #2a3142 */
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -1651,6 +1651,8 @@ body {
   color: #000;
 }
 
+.coupon__type-tab:disabled { opacity: 0.45; cursor: not-allowed; }
+
 /* Событие в купоне */
 .coupon__item {
   padding: 10px 14px;
@@ -2401,7 +2403,6 @@ body {
   color: #4caf50;
 }
 
-/* Исходы ставки (BetLegs) — в истории купона и в профиле */
 .bet-legs {
   display: flex;
   flex-direction: column;
@@ -2926,6 +2927,7 @@ body {
 
 .admin-page__event-finish {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
@@ -3105,10 +3107,6 @@ body {
    АДАПТИВ — три брейкпоинта: 1024 / 768 / 480
    ================================================ */
 
-/* На десктопе главная не должна уезжать под фиксированный купон справа
-   (.right-side: position:fixed; right:20px; width:340px).
-   min-width:0 — чтобы .left-side как flex-элемент мог сжиматься уже своего
-   контента, иначе горизонтальный скролл .sports-nav «распирает» страницу. */
 .left-side {
   margin-right: 372px;
   min-width: 0;
@@ -3118,7 +3116,6 @@ body {
 @media (max-width: 1024px) {
   .header { padding: 0 20px; }
 
-  /* Главная: купон уходит из фикс-позиции в обычный поток под события */
   .left-side {
     width: 100%;
     box-sizing: border-box;
@@ -3139,8 +3136,6 @@ body {
   }
   .coupon { width: 100%; max-height: none; }
 
-  /* /all-sports: три колонки → список спорта горизонтально сверху,
-     панель матчей и купон на всю ширину */
   .main-layout { flex-wrap: wrap; }
   .left-panel {
     width: 100%;
@@ -3210,7 +3205,6 @@ body {
   .auth-overlay { padding: 16px; }
   .auth-modal, .deposit-modal { width: 100%; max-width: 400px; padding: 24px 20px; }
 
-  /* Чат поддержки — во всю ширину экрана снизу */
   .chat-window {
     left: 8px;
     right: 8px;
@@ -3240,7 +3234,7 @@ body {
 /* ---------- ≤480px: узкие телефоны ---------- */
 @media (max-width: 480px) {
   .logo { font-size: 18px; }
-  .toggle-label { display: none; }  /* тумблер темы прячем, чтобы хедер влез */
+  .toggle-label { display: none; }
 
   .sports-nav .sport-item { flex-basis: 84px; height: 44px; }
 

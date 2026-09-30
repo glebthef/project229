@@ -27,10 +27,6 @@ export default function Profile() {
       .finally(() => setLoading(false))
   }, [user])
 
-  // При каждом открытии профиля бэкенд сверяет со Stripe все незавершённые
-  // платежи и зачисляет оплаченные. Так деньги придут, даже если после
-  // оплаты пользователь закрыл вкладку или зашёл с другого устройства.
-  // session_id в адресе значит, что он только что вернулся со страницы Stripe.
   useEffect(() => {
     if (!user) return
     const justPaid = new URLSearchParams(window.location.search).has('session_id')
@@ -53,8 +49,6 @@ export default function Profile() {
   const won  = bets.filter(b => b.status === 'won').length
   const lost = bets.filter(b => b.status === 'lost').length
   const pending = bets.filter(b => b.status === 'pending').length
-  // Фактически начисленное, а не потенциальное: если часть экспресса ушла
-  // в возврат, выплата меньше.
   const totalWinAmount = bets
     .filter(b => b.status === 'won')
     .reduce((acc, b) => acc + parseFloat(b.actual_payout), 0)

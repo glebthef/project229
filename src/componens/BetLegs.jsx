@@ -1,6 +1,3 @@
-// Исходы ставки с состоянием каждого матча: выигрыш/проигрыш со счётом,
-// «идёт», если матч уже начался, или время начала, если ещё нет.
-// Используется и в истории купона, и в профиле.
 
 const OUTCOME_LABELS = {
   p1: 'П1', x: 'X', p2: 'П2',
@@ -12,8 +9,6 @@ function signed(n) {
   return `${n >= 0 ? '+' : ''}${n}`
 }
 
-// Линия тотала/форы берётся из line_value — той, что была на момент ставки.
-// Фора считается как хозяева +h, гости −h (routes/events.py).
 function outcomeLabel(leg) {
   const base = OUTCOME_LABELS[leg.outcome] || leg.outcome
   if (leg.line_value == null) return base

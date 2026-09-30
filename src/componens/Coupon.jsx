@@ -12,8 +12,6 @@ const OUTCOME_LABELS = {
 }
 
 const QUICK_AMOUNTS = [50, 100, 200, 500]
-// Те же лимиты, что и в бэкенде (schemas/bets.py) — проверяем заранее,
-// чтобы показать понятную ошибку, а не ответ валидации сервера.
 const MIN_STAKE = 10
 const MAX_STAKE = 100000
 
@@ -25,7 +23,6 @@ const STATUS_MAP = {
   cancelled: { icon: '🚫', label: 'Отменена', color: '#aaa' },
 }
 
-// Поле события, где лежит коэффициент дополнительного рынка.
 const EXTRA_ODD_FIELD = {
   total_over: 'odd_total_over',
   total_under: 'odd_total_under',
@@ -45,7 +42,6 @@ const betDate = (bet) => new Date(bet.created_at).toLocaleString('ru-RU', {
   day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
 })
 
-// «Экспресс · 3 соб. · сыграло 1 из 3» — прогресс виден, пока ставка не рассчитана.
 function betTitle(bet) {
   if (bet.type !== 'express') return 'Ординар'
   const played = bet.legs.filter(l => l.status !== 'pending').length
@@ -71,9 +67,6 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
     [events]
   )
 
-  // Коэффициент берём из свежих данных события (список обновляется раз в
-  // 30 секунд), а не тот, что запомнили при добавлении в купон: если админ
-  // поменял линию, пользователь увидит новый коэффициент до ставки.
   const rawItems = Object.values(coupon).map(item => {
     const liveMatch = eventsById[item.match.id]
     const stale = !!liveMatch && getMatchStatus(liveMatch) !== 'upcoming'
@@ -81,12 +74,11 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
     const oddChanged = fresh != null && Number(fresh) !== Number(item.odd)
     return { ...item, odd: fresh ?? item.odd, oldOdd: oddChanged ? item.odd : null, stale }
   })
-  // В экспресс — только исходы разных матчей: исходы одного матча связаны,
-  // и перемножать их коэффициенты нельзя. Ординарами — можно.
+  const mode = rawItems.length > 1 ? betType : 'single'
   const perMatch = rawItems.reduce((acc, i) => ({ ...acc, [i.match.id]: (acc[i.match.id] || 0) + 1 }), {})
   const items = rawItems.map(i => ({
     ...i,
-    sameEvent: betType === 'express' && !i.conflict && perMatch[i.match.id] > 1,
+    sameEvent: mode === 'express' && !i.conflict && perMatch[i.match.id] > 1,
   }))
   const conflictItems = items.filter(i => i.conflict)
   const alreadyBetItems = items.filter(i => i.alreadyBet)
@@ -105,8 +97,6 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
   const pendingBets = betsHistory.filter(b => b.status === 'pending')
   const settledBets = betsHistory.filter(b => b.status !== 'pending')
 
-  // «Отпечаток» статусов ставок и их исходов: по нему видно, что что-то
-  // рассчиталось, и пора обновить баланс и список событий.
   const historySignature = useRef(null)
 
   const syncHistory = async (showTab = true) => {
@@ -127,8 +117,6 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
     }
   }
 
-  // История — с сервера: подгружаем при входе, а пока есть нерассчитанные
-  // ставки, обновляем раз в 15 секунд.
   useEffect(() => {
     historySignature.current = null
     if (user) syncHistory(false)
@@ -165,7 +153,7 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
     setBetError('')
 
     try {
-      if (betType === 'single') {
+      if (mode === 'single') {
         for (const item of validItems) {
           await createSingleBet(
             user.id, user.secret,
@@ -188,13 +176,8 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
     } catch (e) {
       console.error('Bet error:', e)
       setBetError(e.message || 'Ошибка при размещении ставки')
-      // Чаще всего причина — изменившийся коэффициент или начавшийся матч:
-      // подтягиваем свежие события, чтобы купон показал актуальные данные.
       if (onEventsUpdate) onEventsUpdate()
     } finally {
-      // И при успехе, и при ошибке берём историю и баланс с сервера: если
-      // из нескольких ординаров часть успела пройти до ошибки, они тоже
-      // появятся в истории.
       await syncHistory(false)
       await refreshBalance()
       setBetLoading(false)
@@ -208,7 +191,7 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
     if (hasStale) return 'Удали неактуальные события'
     if (hasSameEvent) return 'Экспресс: только разные матчи'
     if (validItems.length === 0) return 'Добавь события'
-    if (betType === 'single' && validItems.length > 1)
+    if (mode === 'single' && validItems.length > 1)
       return `Заключить ${validItems.length} ординара`
     return 'Заключить'
   }
@@ -248,18 +231,20 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
           {items.length > 0 && (
             <div className="coupon__type-tabs">
               <button
-                className={`coupon__type-tab ${betType === 'single' ? 'coupon__type-tab--active' : ''}`}
+                className={`coupon__type-tab ${mode === 'single' ? 'coupon__type-tab--active' : ''}`}
                 onClick={() => setBetType('single')}
               >Ординар</button>
               <button
-                className={`coupon__type-tab ${betType === 'express' ? 'coupon__type-tab--active' : ''}`}
+                className={`coupon__type-tab ${mode === 'express' ? 'coupon__type-tab--active' : ''}`}
                 onClick={() => setBetType('express')}
+                disabled={items.length < 2}
+                title={items.length < 2 ? 'Экспресс — от двух событий' : undefined}
               >Экспресс</button>
             </div>
           )}
 
      
-          {items.length > 1 && betType === 'single' && !hasIssues && (
+          {items.length > 1 && mode === 'single' && !hasIssues && (
             <div className="coupon__hint">
               💡 Ординар: {validItems.length} ставки по {stakeNum || '...'} ₽ каждая
             </div>
@@ -359,7 +344,7 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
                 <button className="coupon__delete-all" onClick={clearCoupon}>
                   🗑 Удалить все...
                 </button>
-                {!hasIssues && betType === 'express' && (
+                {!hasIssues && mode === 'express' && (
                   <span className="coupon__total-odd-small">{totalOdd.toFixed(2)}</span>
                 )}
               </div>
@@ -368,13 +353,13 @@ export default function Coupon({ onAuthOpen, onEventsUpdate, events = [] }) {
 
           {items.length > 0 && (
             <div className="coupon__footer">
-              {payout && betType === 'express' && (
+              {payout && mode === 'express' && (
                 <div className="coupon__payout">
                   <span>Выигрыш</span>
                   <span className="coupon__payout-value">{payout} ₽</span>
                 </div>
               )}
-              {payout && betType === 'single' && validItems.length > 0 && (
+              {payout && mode === 'single' && validItems.length > 0 && (
                 <div className="coupon__payout">
                   <span>Выигрыш за каждую</span>
                   <span className="coupon__payout-value">

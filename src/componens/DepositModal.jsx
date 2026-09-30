@@ -3,9 +3,6 @@ import { useAuth } from "../AuthContext";
 import { createDeposit } from "../api";
 
 const AMOUNTS = [500, 1000, 2000, 5000, 10000];
-// Единственный способ пополнения — Stripe в тестовом режиме: баланс
-// зачисляет только бэкенд, после того как Stripe подтвердил оплату
-// (см. Profile.jsx и routes/payments.py).
 const METHODS = [
   {
     id: "stripe",
@@ -13,6 +10,7 @@ const METHODS = [
     icon: "🧪",
     desc: "Тестовый платёж (Stripe)",
     min: 50,
+    max: 100000, // как в DepositCreate на бэкенде
   },
 ];
 
@@ -40,6 +38,10 @@ export default function DepositModal({ onClose }) {
       setError(`Минимальная сумма: ${selectedMethod.min} ₽`);
       return;
     }
+    if (selectedMethod && num > selectedMethod.max) {
+      setError(`Максимальная сумма: ${selectedMethod.max.toLocaleString("ru-RU")} ₽`);
+      return;
+    }
     setError("");
     setStep("confirm");
   };
@@ -56,7 +58,6 @@ export default function DepositModal({ onClose }) {
         num,
         returnUrl,
       );
-      // Зачисление проверит профиль после возврата (см. Profile.jsx).
       window.location.href = confirmation_url;
     } catch (e) {
       setError(e.message || "Ошибка при пополнении");

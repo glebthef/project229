@@ -1,8 +1,5 @@
 import { useAuth, checkConflict, getOutcomeGroup, getMatchStatus } from '../AuthContext'
 
-// How many outcomes the "Ещё" button on a match card actually reveals,
-// beyond the p1/x/p2 already shown there — mirrors the hasTotal/hasHandicap
-// gating below so the number on the card matches what the modal opens to.
 export function getExtraMarketsCount(match) {
   const extra = match.extra || {}
   const isCyber = match.sport_slug === 'cybersport'
@@ -35,10 +32,6 @@ export default function MatchModal({ match, onClose, onAuthOpen }) {
   const totalVal = extra.total_value ?? 2.5
   const handicapVal = extra.handicap_value ?? 1.0
   const isCyber = match.sport_slug === 'cybersport'
-  // Demo (non-DB) matches never accept real bets, so they keep illustrative
-  // fallback numbers; matches loaded from the DB only offer markets the
-  // backend actually priced — otherwise the bet would always be rejected
-  // server-side with "outcome is not available".
   const hasTotal = extra.odd_total_over != null && extra.odd_total_under != null
   const hasHandicap = extra.odd_handicap_home != null && extra.odd_handicap_away != null
   const groups = [
@@ -48,9 +41,6 @@ export default function MatchModal({ match, onClose, onAuthOpen }) {
       match.odds?.p2 ? { key:'p2', label:`Победа ${match.away}`, odd: match.odds.p2 } : null,
     ].filter(Boolean) },
     isCyber && hasTotal && hasHandicap ? { group:'Карты', outcomes: [
-      // Линии — из события, а не зашитые числа: расчёт на бэкенде идёт по
-      // total_value/handicap_value, и подпись должна им совпадать. Фора
-      // гостей — со знаком минус, как и в расчёте (хозяева +h, гости −h).
       { key:'total_over',    label:`Больше ${totalVal} карт`,              odd: extra.odd_total_over    ?? +((p2)*1.2).toFixed(2) },
       { key:'total_under',   label:`Меньше ${totalVal} карт`,              odd: extra.odd_total_under   ?? +((p1)*0.8).toFixed(2) },
       { key:'handicap_home', label:`${match.home} (+${handicapVal}) по картам`, odd: extra.odd_handicap_home ?? +((p1)*0.75).toFixed(2) },

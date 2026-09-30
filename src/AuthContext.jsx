@@ -34,8 +34,6 @@ export function AuthProvider({ children }) {
   })
   const [coupon, setCoupon] = useState({})
   const [stake, setStake] = useState('')
-  // История ставок — всегда с сервера (Coupon подгружает её через
-  // getUserBets), поэтому одинакова на любом устройстве и после перелогина.
   const [betsHistory, setBetsHistory] = useState([])
   const [loading, setLoading] = useState(false)
 

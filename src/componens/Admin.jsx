@@ -35,15 +35,11 @@ const emptyForm = {
   odd_handicap_away: "",
 };
 
-// Матч начался больше 3 часов назад, а результат так и не внесён: ставки на
-// него висят «в ожидании», пока админ его не завершит.
 const OVERDUE_MS = 3 * 60 * 60 * 1000;
 function isOverdue(ev) {
   return ev.status !== "finished" && new Date(ev.starts_at).getTime() < Date.now() - OVERDUE_MS;
 }
 
-// Backend sends "2026-09-10T20:00:00Z"; <input type="datetime-local"> needs
-// "2026-09-10T20:00" in the browser's own local time.
 function toDatetimeLocal(isoString) {
   if (!isoString) return "";
   const d = new Date(isoString);
@@ -96,9 +92,6 @@ export default function Admin() {
     loadChats();
   }, []);
 
-  // Пока открыт какой-то диалог — подтягиваем список чатов (превью/новые
-  // треды) и сообщения выбранного треда, чтобы видеть ответы в реальном
-  // времени без ручного обновления страницы.
   useEffect(() => {
     const interval = setInterval(() => {
       loadChats();

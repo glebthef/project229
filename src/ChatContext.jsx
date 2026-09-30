@@ -31,8 +31,6 @@ export function ChatProvider({ children }) {
       .catch(() => {})
   }, [user])
 
-  // Пока чат открыт и пользователь авторизован — подтягиваем новые
-  // сообщения с бэкенда (в т.ч. ответы оператора из админки) поллингом.
   useEffect(() => {
     if (!isChatOpen || !user) return
     loadMessages()
